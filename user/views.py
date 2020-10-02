@@ -80,6 +80,11 @@ class AgentViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED, headers=headers
         )
     
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+
     def list(self, request, *args, **kwargs):
         queryset = models.UserProfile.objects.filter(created_by=request.user.id)
 
@@ -92,17 +97,9 @@ class AgentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-    def perform_create(self, serializer):
-        serializer.save()
-
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name', 'email',)
 
-    # def get_permissions(self):
-    #     print(self.action)
-    #     if self.action == 'list':
-    #         return [AllowAny(), ]        
-    #     return super(AgentViewSet, self).get_permissions()
 
 
 class AdminCreateView(generics.CreateAPIView):
@@ -112,12 +109,14 @@ class AdminCreateView(generics.CreateAPIView):
     # authentication_classes = (TokenAuthentication,)
     # permission_classes = (permissions.ProfilePermission,)
 
+
 class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.AdminSerializer
     queryset =  models.UserProfile.objects.all()
 
     authentication_classes = (TokenAuthentication,)
     permission_classes = (permissions.ProfilePermission, permissions.HasAdminPermission)
+
 
 class UserLoginApiView(ObtainAuthToken):
    """Handle creating user authentication tokens"""

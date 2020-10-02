@@ -5,6 +5,8 @@ class HasAdminPermission(permissions.BasePermission):
     """Allow users to edit their own profile"""
 
     def has_permission(self, request, view):
+        """Check user is superuser or not"""
+
         return request.user.is_superuser
 
 
