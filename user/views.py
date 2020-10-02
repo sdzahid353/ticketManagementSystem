@@ -69,7 +69,28 @@ class AgentViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response({'serializer data' : serializer.data, 'agent_data' : {'username' : request.data.get('username'), 'password' : request.data.get('password')}}, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            {
+                'serializer data' : serializer.data,
+                'agent_data' : {
+                    'username' : request.data.get('username'),
+                    'password' : request.data.get('password')
+                }
+            },
+            status=status.HTTP_201_CREATED, headers=headers
+        )
+    
+    def list(self, request, *args, **kwargs):
+        queryset = models.UserProfile.objects.filter(created_by=request.user.id)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
 
     def perform_create(self, serializer):
         serializer.save()
@@ -77,24 +98,26 @@ class AgentViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name', 'email',)
 
-    def get_permissions(self):
-        print(self.action)
-        if self.action == 'list':
-            return [AllowAny(), ]        
-        return super(AgentViewSet, self).get_permissions()
+    # def get_permissions(self):
+    #     print(self.action)
+    #     if self.action == 'list':
+    #         return [AllowAny(), ]        
+    #     return super(AgentViewSet, self).get_permissions()
 
 
-# class AdminCreateView(generics.CreateAPIView):
-#     serializer_class = serializers.AdminSerializer
-#     queryset = models.UserProfile.objects.all()
+class AdminCreateView(generics.CreateAPIView):
+    serializer_class = serializers.AdminSerializer
+    queryset = models.UserProfile.objects.all()
 
-#     # authentication_classes = (TokenAuthentication,)
-#     # permission_classes = (permissions.ProfilePermission,)
+    # authentication_classes = (TokenAuthentication,)
+    # permission_classes = (permissions.ProfilePermission,)
 
-# class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
-#     serializer_class = serializers.AdminSerializer
-#     queryset =  models.UserProfile.objects.all()
-#     permission_classes = (permissions.ProfilePermission, permissions.HasAdminPermission)
+class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = serializers.AdminSerializer
+    queryset =  models.UserProfile.objects.all()
+
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (permissions.ProfilePermission, permissions.HasAdminPermission)
 
 class UserLoginApiView(ObtainAuthToken):
    """Handle creating user authentication tokens"""

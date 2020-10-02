@@ -11,7 +11,7 @@
     py -m pip install --user virtualenv (pip install virtualenv)
 
 
-## Creating a virtual environment¶
+## Creating a virtual environment
 
 ### On macOS and Linux:
 
@@ -22,7 +22,7 @@
     py -m venv env (virtualenv venv)
 
 
-## Activating a virtual environment¶
+## Activating a virtual environment
 
 ### On macOS and Linux:
 

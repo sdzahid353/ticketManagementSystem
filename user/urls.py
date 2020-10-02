@@ -11,8 +11,8 @@ router.register('agent', views.AgentViewSet)
 
 urlpatterns = [
     path('login/', views.UserLoginApiView.as_view()),
-    # path('adminsignup/', views.AdminCreateView.as_view()),
+    path('adminsignup/', views.AdminCreateView.as_view()),
     # path('signup/', views.signup, name='signup'),
-    # path('adminupdate/<int:pk>', views.AdminUpdateView.as_view()),
+    path('adminupdate/<int:pk>', views.AdminUpdateView.as_view()),
     path('', include(router.urls)),
 ]
