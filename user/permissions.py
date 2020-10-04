@@ -19,4 +19,10 @@ class ProfilePermission(permissions.BasePermission):
         # if request.method in permissions.SAFE_METHODS:
         #     return True
 
+        print(obj.created_by)
         return obj.id == request.user.id
+
+
+# class AgentUpdatePermission(permissions.BasePermission):
+    
+#     def has_

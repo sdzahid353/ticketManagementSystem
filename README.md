@@ -268,9 +268,9 @@ Now create **AgentSerializer** and **AdminSerializer** in serialiers.py of user 
             return super().update(instance, validated_data)
 
 
-Before creating views we should create permisiions
+Before creating views we should create permissions
 
-for that craete a file called **permission.py** and create permission in that
+for that create a file called **permission.py** and create permission in that
 
 ### user/permissions.py
 
@@ -409,7 +409,7 @@ In views.py **AdminViewSet** and **AgentViewSet** inherits from **ModelViewSet**
 
 **AdminCreateView** is used to do only **POST** method
 
-**AdminUpdateView** is used to do **GET PUT UPDATE & DELETE** methods
+**AdminUpdateView** is used to do **GET, PUT, PATCH & DELETE** methods
 
 
 

@@ -7,11 +7,14 @@ class AgentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.UserProfile
-        fields = ('id', 'name', 'email', 'username', 'password',)
+        fields = ('id', 'name', 'email', 'username', 'password','created_by')
         extra_kwargs = {
             'password' : {
                 'write_only' : True,
                 'style' : {'input_type' : 'password'}
+            },
+            'created_by' : {
+                'read_only' : True
             }
         }
     

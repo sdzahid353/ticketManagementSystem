@@ -62,7 +62,7 @@ class AgentViewSet(viewsets.ModelViewSet):
     queryset = models.UserProfile.objects.all()
 
     authentication_classes = [TokenAuthentication]
-    permission_classes = (IsAuthenticated, permissions.HasAdminPermission) 
+    permission_classes = (IsAuthenticated, permissions.HasAdminPermission, ) 
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -96,6 +96,54 @@ class AgentViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        print(instance)
+        serializer = self.get_serializer(instance)
+        if request.user.id == serializer.data.get('created_by'):
+            return Response(serializer.data)
+        return Response({"Message" : "You don't have permission"})
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        print(instance.created_by)
+        print(instance)
+        print(request.user)
+        if instance.created_by == request.user:
+            partial = kwargs.pop('partial', False)
+            print(instance.created_by)
+            print(instance)
+            print(request.user)
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+
+            if getattr(instance, '_prefetched_objects_cache', None):
+                # If 'prefetch_related' has been applied to a queryset, we need to
+                # forcibly invalidate the prefetch cache on the instance.
+                instance._prefetched_objects_cache = {}
+
+            return Response(serializer.data)
+        return Response({"Message" : "You don't have permission to update"})
+    
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.created_by == request.user:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({"Message" : "You don't have permission to delete"})
+
+    def perform_destroy(self, instance):
+        instance.delete()
 
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name', 'email',)
