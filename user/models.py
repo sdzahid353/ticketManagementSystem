@@ -36,9 +36,6 @@ class UserProfileManager(BaseUserManager):
 
 
 
-
-
-
 class UserProfile(AbstractBaseUser, PermissionsMixin):
     """Database model for users in the system"""
     name = models.CharField(max_length=255)

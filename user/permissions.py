@@ -22,7 +22,3 @@ class ProfilePermission(permissions.BasePermission):
         print(obj.created_by)
         return obj.id == request.user.id
 
-
-# class AgentUpdatePermission(permissions.BasePermission):
-    
-#     def has_

@@ -117,7 +117,6 @@ class AgentViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        print(instance)
         serializer = self.get_serializer(instance)
         if request.user.id == serializer.data.get('created_by'):
             return Response(serializer.data)
@@ -125,14 +124,8 @@ class AgentViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        print(instance.created_by)
-        print(instance)
-        print(request.user)
         if instance.created_by == request.user:
             partial = kwargs.pop('partial', False)
-            print(instance.created_by)
-            print(instance)
-            print(request.user)
             serializer = self.get_serializer(instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)

@@ -502,48 +502,63 @@ We want to apply somy restrictions to agent viewset as
 * Update and delete operations are accessable only to that created admin.
 
 
-For updating and deletion operation we should override the **update** and **delete** fuctions in **AgentViewSet**
+For retrieving(getting), updating and deletion operation we should override the **retrieve**, **update** and **delete** fuctions in **AgentViewSet**
+
+update the **AgentViewSet** in **user/views.py** with the following code
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        print(instance)
+        serializer = self.get_serializer(instance)
+        if request.user.id == serializer.data.get('created_by'):
+            return Response(serializer.data)
+        return Response({"Message" : "You don't have permission"})
+
 
     def update(self, request, *args, **kwargs):
-            instance = self.get_object()
-            if instance.created_by == request.user:
-                partial = kwargs.pop('partial', False)
-                print(instance.created_by)
-                print(instance)
-                print(request.user)
-                serializer = self.get_serializer(instance, data=request.data, partial=partial)
-                serializer.is_valid(raise_exception=True)
-                self.perform_update(serializer)
+        instance = self.get_object()
+        if instance.created_by == request.user:
+            partial = kwargs.pop('partial', False)
+            print(instance.created_by)
+            print(instance)
+            print(request.user)
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
 
-                if getattr(instance, '_prefetched_objects_cache', None):
-                    # If 'prefetch_related' has been applied to a queryset, we need to
-                    # forcibly invalidate the prefetch cache on the instance.
-                    instance._prefetched_objects_cache = {}
+            if getattr(instance, '_prefetched_objects_cache', None):
+                # If 'prefetch_related' has been applied to a queryset, we need to
+                # forcibly invalidate the prefetch cache on the instance.
+                instance._prefetched_objects_cache = {}
 
-                return Response(serializer.data)
-            return Response({"Message" : "You don't have permission to update"})
+            return Response(serializer.data)
+        return Response({"Message" : "You don't have permission to update"})
         
 
-        def perform_update(self, serializer):
-            serializer.save()
+    def perform_update(self, serializer):
+        serializer.save()
 
-        def partial_update(self, request, *args, **kwargs):
-            kwargs['partial'] = True
-            return self.update(request, *args, **kwargs)
-
-
-        def destroy(self, request, *args, **kwargs):
-            instance = self.get_object()
-            if instance.created_by == request.user:
-                self.perform_destroy(instance)
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            return Response({"Message" : "You don't have permission to delete"})
-
-        def perform_destroy(self, instance):
-            instance.delete()
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
 
 
-Now there is another problem is rising here, when we visit the AdminViewSet end point **http://127.0.0.1:8000/user/admin/** , it displays the complete users(Admins & Agents) list. So we should filter here to display only the admins and the admins belongs to same company to the logged in superuser(Admin) 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.created_by == request.user:
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({"Message" : "You don't have permission to delete"})
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+
+Now another problem is rising here, when we visit the **AdminViewSet** end point **http://127.0.0.1:8000/user/admin/** , it displays the complete users(Admins & Agents) list. So we should filter here to display only the admins and the admins belongs to same company to the logged in superuser(Admin) 
+
+For getting list of admins belongs to same company/organisation we should override the **list** function in **AdmintViewSet**
+
+Update the **AdminViewSet** in **user/views.py** with the following code
 
     def list(self, request, *args, **kwargs):
         
