@@ -57,8 +57,6 @@ class AdminSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Create and return a new admin"""
-        print("::: validated_data :::")
-        print(validated_data)
         user = models.UserProfile.objects.create_superuser(
             name=validated_data['name'],
             email=validated_data['email'],
@@ -67,7 +65,6 @@ class AdminSerializer(serializers.ModelSerializer):
             company_site=validated_data['company_site']
         )
 
-        print(validated_data.get('created_by'))
         return user
 
 

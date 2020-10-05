@@ -61,7 +61,7 @@
 
 ### Installing django and djangorestframework
 
-After activating Virtualenv install django and djangorestframework by using following following commands
+After activating Virtualenv install **django** and **djangorestframework** by using following following commands
 
     pip install django
     pip install djangorestframework
@@ -75,7 +75,7 @@ And create project(TMS) by using following command
 
 ### Modify settings.py
 
-Now add 'rest_framework' and 'rest_framework.authtoken' in INSTALLED_APPS of settings.py file
+Now add **'rest_framework'** and **'rest_framework.authtoken'** in INSTALLED_APPS of settings.py file
 
     INSTALLED_APPS = [
         'django.contrib.admin',
@@ -88,7 +88,7 @@ Now add 'rest_framework' and 'rest_framework.authtoken' in INSTALLED_APPS of set
         'rest_framework.authtoken',
     ]
 
-and change TIME_ZONE from 'UTC' to 'Asia/Kolkata' in settings.py
+and change TIME_ZONE from **'UTC'** to **'Asia/Kolkata'** in settings.py
 
     TIME_ZONE = 'Asia/Kolkata'
 
@@ -102,10 +102,11 @@ now migrate to migrate all migrations of INSTALLED_APPS by using following comma
 
 ### create user app
 
-Now create a new app called user for custom user management
+Now create a new app called **user** for custom user management
 
     python manage.py startapp user
 
+Add the following script in **models.py** of **user** app
 
 ### user/models.py
 
@@ -180,7 +181,7 @@ Now create a new app called user for custom user management
 
 
 
-Here in user/models.py create a model called UserProfile for custom user and in that **'created_by'** field should refer to **settings.AUTH_USER_MODEL** using by foreign key 
+Here in user/models.py create a model called **UserProfile** for custom user and in that **'created_by'** field should refer to **settings.AUTH_USER_MODEL** using by foreign key 
 
 For **settings.AUTH_USER_MODEL** we add **AUTH_USER_MODEL = 'user.UserProfile'** in settings.py file
 
@@ -483,4 +484,79 @@ Check permissions for admin update/delete in **AdminViewSet** & **AdminUpdateVie
                     OR
 
     http://127.0.0.1:8000/user/adminupdate/<int:pk>
+
+
+
+Now the **REQUIRED_FIELDS** list is append with **'name', 'email', 'company_site'** in **user/models.py** for our requirement as we want to create superuser using terminal
+
+
+In **user/views.py** we should override some fuctions as per our convinient
+
+Lets talk about agent
+
+We want to apply somy restrictions to agent viewset as
+
+* Agent account is created only by logged in Admin(superuser).
+* The list of agents visible to that user who created those agents.
+* The details agent is visible to that user who has created that agent.
+* Update and delete operations are accessable only to that created admin.
+
+
+For updating and deletion operation we should override the **update** and **delete** fuctions in **AgentViewSet**
+
+    def update(self, request, *args, **kwargs):
+            instance = self.get_object()
+            if instance.created_by == request.user:
+                partial = kwargs.pop('partial', False)
+                print(instance.created_by)
+                print(instance)
+                print(request.user)
+                serializer = self.get_serializer(instance, data=request.data, partial=partial)
+                serializer.is_valid(raise_exception=True)
+                self.perform_update(serializer)
+
+                if getattr(instance, '_prefetched_objects_cache', None):
+                    # If 'prefetch_related' has been applied to a queryset, we need to
+                    # forcibly invalidate the prefetch cache on the instance.
+                    instance._prefetched_objects_cache = {}
+
+                return Response(serializer.data)
+            return Response({"Message" : "You don't have permission to update"})
+        
+
+        def perform_update(self, serializer):
+            serializer.save()
+
+        def partial_update(self, request, *args, **kwargs):
+            kwargs['partial'] = True
+            return self.update(request, *args, **kwargs)
+
+
+        def destroy(self, request, *args, **kwargs):
+            instance = self.get_object()
+            if instance.created_by == request.user:
+                self.perform_destroy(instance)
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({"Message" : "You don't have permission to delete"})
+
+        def perform_destroy(self, instance):
+            instance.delete()
+
+
+Now there is another problem is rising here, when we visit the AdminViewSet end point **http://127.0.0.1:8000/user/admin/** , it displays the complete users(Admins & Agents) list. So we should filter here to display only the admins and the admins belongs to same company to the logged in superuser(Admin) 
+
+    def list(self, request, *args, **kwargs):
+        
+        if request.user.is_superuser:
+            queryset = models.UserProfile.objects.filter(company_site=request.user.company_site)
+
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        return Response({"Message" : "You don't have permission to view"})
+
 

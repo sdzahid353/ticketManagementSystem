@@ -18,28 +18,32 @@ from django.core.mail import EmailMessage
 
 
 from . import serializers, models, permissions
-# from . import forms
+from . import forms
 
-# def signup(request):
-#     if request.method == 'POST':
-#         form = serializers.AdminSerializer(data=request.POST)
-#         if form.is_valid():
-#             user = form.save()
-#             user.save()
-#             # current_site = get_current_site(request)
-#             mail_subject = 'Welcome to TMS'
-#             message = render_to_string('acc_email.html', {
-#                 'user': user
-#                 })
-#             to_email = form.validated_data.get('email')
-#             email = EmailMessage(
-#                         mail_subject, message, to=[to_email]
-#             )
-#             email.send()
-#             return HttpResponse('Please confirm your email address to complete the registration')
-#     else:
-#         form = forms.AdminSignupForm()
-#     return render(request, 'signup.html', {'form': form})
+def signup(request):
+    if request.method == 'POST':
+        print(":: Request ::")
+        print(request)
+        print(':: request.post ::')
+        print(request.POST)
+        form = serializers.AdminSerializer(data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            user.save()
+            # current_site = get_current_site(request)
+            mail_subject = 'Welcome to TMS'
+            message = render_to_string('acc_email.html', {
+                'user': user
+                })
+            to_email = form.validated_data.get('email')
+            email = EmailMessage(
+                        mail_subject, message, to=[to_email]
+            )
+            email.send()
+            return HttpResponse('Please confirm your email address to complete the registration')
+    else:
+        form = forms.AdminSignupForm()
+    return render(request, 'register.html', {'form': form})
 
 
 
@@ -51,6 +55,21 @@ class AdminViewSet(viewsets.ModelViewSet):
 
     authentication_classes = (TokenAuthentication,)
     permission_classes = (permissions.ProfilePermission,)
+
+    def list(self, request, *args, **kwargs):
+        
+        if request.user.is_superuser:
+            queryset = models.UserProfile.objects.filter(company_site=request.user.company_site)
+
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        return Response({"Message" : "You don't have permission to view"})
+
 
     # filter_backends = (filters.SearchFilter,)
     # search_fields = ('name', 'email',)
@@ -154,6 +173,15 @@ class AdminCreateView(generics.CreateAPIView):
     serializer_class = serializers.AdminSerializer
     queryset = models.UserProfile.objects.all()
 
+
+    # def post(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     user = serializer.save()
+    #     # headers = self.get_success_headers(serializer.data)
+    #     return render(request, 'register.html', {'form': user})
+
+    
     # authentication_classes = (TokenAuthentication,)
     # permission_classes = (permissions.ProfilePermission,)
 
