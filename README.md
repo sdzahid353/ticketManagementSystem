@@ -489,6 +489,8 @@ Check permissions for admin update/delete in **AdminViewSet** & **AdminUpdateVie
 
 Now the **REQUIRED_FIELDS** list is append with **'name', 'email', 'company_site'** in **user/models.py** for our requirement as we want to create superuser using terminal
 
+    REQUIRED_FIELDS = ['name', 'email', 'company_site']
+
 
 In **user/views.py** we should override some fuctions as per our convinient
 

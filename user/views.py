@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework import generics
+from django.views.generic import View, UpdateView
 from rest_framework.response import Response
 from rest_framework import viewsets,status
 from rest_framework.authentication import TokenAuthentication
@@ -8,7 +9,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.settings import api_settings
 from rest_framework import filters
 from django.http import HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse_lazy
+from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import force_bytes, force_text
@@ -17,8 +20,74 @@ from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 
 
-from . import serializers, models, permissions
+from . import serializers, models, permissions, tokens
 from . import forms
+
+
+
+
+def index(request): 
+    return render(request, 'index.html', {'title':'index'}) 
+
+class AgentSignupView(View):
+    form_class = forms.AgentSignupForm
+    template_name = 'agent_sign_up.html'
+
+    def get(self, request, *args, **kwargs):
+        form = self.form_class()
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+
+            user = form.save(commit=False)
+            user.is_active = False # Deactivate account till it is confirmed
+            user.save()
+
+            current_site = get_current_site(request)
+            mail_subject = 'Activate Your MySite Account'
+            message = render_to_string('acc_email.html', {
+                'user': user,
+                'password' : request.POST.get("password1"),
+                'domain': current_site.domain,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'token': tokens.account_activation_token.make_token(user),
+            })
+            # user.email_user(subject, message)
+            print(request.POST.get('email'))
+            to_email = request.POST.get('email')
+            email = EmailMessage(
+                        mail_subject, message, to=[to_email]
+            )
+            email.send()
+
+            messages.success(request, ('Please Confirm your email to complete registration.'))
+
+            return redirect('login')
+
+        return render(request, self.template_name, {'form': form})
+
+
+class ActivateAccount(View):
+
+    def get(self, request, uidb64, token, *args, **kwargs):
+        try:
+            uid = force_text(urlsafe_base64_decode(uidb64))
+            user = models.UserProfile.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and tokens.account_activation_token.check_token(user, token):
+            user.is_active = True
+            # user.profile.email_confirmed = True
+            user.save()
+            # login(request, user)
+            messages.success(request, ('Your account have been confirmed.'))
+            return redirect('index')
+        else:
+            messages.warning(request, ('The confirmation link was invalid, possibly because it has already been used.'))
+            return redirect('index')
 
 def signup(request):
     if request.method == 'POST':
@@ -30,16 +99,16 @@ def signup(request):
         if form.is_valid():
             user = form.save()
             user.save()
-            # current_site = get_current_site(request)
-            mail_subject = 'Welcome to TMS'
-            message = render_to_string('acc_email.html', {
-                'user': user
-                })
-            to_email = form.validated_data.get('email')
-            email = EmailMessage(
-                        mail_subject, message, to=[to_email]
-            )
-            email.send()
+            # # current_site = get_current_site(request)
+            # mail_subject = 'Welcome to TMS'
+            # message = render_to_string('acc_email.html', {
+            #     'user': user
+            #     })
+            # to_email = form.validated_data.get('email')
+            # email = EmailMessage(
+            #             mail_subject, message, to=[to_email]
+            # )
+            # email.send()
             return HttpResponse('Please confirm your email address to complete the registration')
     else:
         form = forms.AdminSignupForm()
