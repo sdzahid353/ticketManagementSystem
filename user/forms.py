@@ -11,7 +11,7 @@ class AdminSignupForm(UserCreationForm):
     
     class Meta:
         model = models.UserProfile
-        fields = ('email', 'name', 'username', 'password', 'company_site')
+        fields = ('email', 'name', 'username', 'company_site')
 
 
 class AgentSignupForm(UserCreationForm):
@@ -20,4 +20,4 @@ class AgentSignupForm(UserCreationForm):
     
     class Meta:
         model = models.UserProfile
-        fields = ('email', 'name', 'username', 'password',)
+        fields = ('email', 'name', 'username',)

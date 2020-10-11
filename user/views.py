@@ -29,24 +29,28 @@ from . import forms
 def index(request): 
     return render(request, 'index.html', {'title':'index'}) 
 
-class AgentSignupView(View):
+class AgentSignupView(generics.CreateAPIView):
     form_class = forms.AgentSignupForm
     template_name = 'agent_sign_up.html'
 
+
     def get(self, request, *args, **kwargs):
         form = self.form_class()
-        return render(request, self.template_name, {'form': form})
+        if request.user.is_superuser:
+            return render(request, self.template_name, {'form': form})
+        return redirect('login')
 
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST)
         if form.is_valid():
 
             user = form.save(commit=False)
+            user.created_by = request.user
             user.is_active = False # Deactivate account till it is confirmed
             user.save()
 
             current_site = get_current_site(request)
-            mail_subject = 'Activate Your MySite Account'
+            mail_subject = 'Activate Your Account'
             message = render_to_string('acc_email.html', {
                 'user': user,
                 'password' : request.POST.get("password1"),
@@ -138,6 +142,24 @@ class AdminViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
         return Response({"Message" : "You don't have permission to view"})
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        mail_subject = 'Welcome to My Company'
+        message = render_to_string('admin_email.html', {
+            'user': request.data.get('name'),
+            'company_site' : request.data.get('company_site'),
+        })
+        to_email = request.data.get('email')
+        email = EmailMessage(
+                    mail_subject, message, to=[to_email]
+        )
+        email.send()
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
     # filter_backends = (filters.SearchFilter,)
