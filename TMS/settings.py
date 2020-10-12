@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'user',
     'crispy_forms',
     'django_email_verification',
+    'ticket',
 ]
 
 MIDDLEWARE = [
