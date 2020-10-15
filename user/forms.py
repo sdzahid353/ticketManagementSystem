@@ -5,7 +5,7 @@ from . import models
 
 
 
-class AdminSignupForm(UserCreationForm):
+class SignupForm(UserCreationForm):
     
     # email = forms.EmailField(max_length=200, help_text='Required')
     
@@ -14,10 +14,10 @@ class AdminSignupForm(UserCreationForm):
         fields = ('email', 'name', 'username', 'company_site')
 
 
-class AgentSignupForm(UserCreationForm):
+# class AgentSignupForm(UserCreationForm):
     
-    # email = forms.EmailField(max_length=200, help_text='Required')
+#     # email = forms.EmailField(max_length=200, help_text='Required')
     
-    class Meta:
-        model = models.UserProfile
-        fields = ('email', 'name', 'username',)
+#     class Meta:
+#         model = models.UserProfile
+#         fields = ('email', 'name', 'username',)

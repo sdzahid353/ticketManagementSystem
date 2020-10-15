@@ -13,11 +13,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
+from django.core.exceptions import PermissionDenied
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
+from django.db.models import Q
 
 
 from . import serializers, models, permissions, tokens
@@ -27,25 +29,31 @@ from . import forms
 
 
 def index(request): 
-    return render(request, 'index.html', {'title':'index'}) 
+    return render(request, 'signup_agent.html', {'title':'index'}) 
 
 class AgentSignupView(generics.CreateAPIView):
-    form_class = forms.AgentSignupForm
-    template_name = 'agent_sign_up.html'
+    form_class = forms.SignupForm
+    serializer_class = serializers.AgentSerializer
+    template_name = 'signup_agent.html'
 
+    authentication_classes = [TokenAuthentication]
 
     def get(self, request, *args, **kwargs):
         form = self.form_class()
+        serializer = self.get_serializer()
         if request.user.is_superuser:
             return render(request, self.template_name, {'form': form})
-        return redirect('login')
+        return Response('login to add agent.')
 
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST)
+        serializer = self.get_serializer(data=request.data)
+
         if form.is_valid():
 
-            user = form.save(commit=False)
+            user = form.save()
             user.created_by = request.user
+            user.company_site = request.user.company_site
             user.is_active = False # Deactivate account till it is confirmed
             user.save()
 
@@ -53,7 +61,7 @@ class AgentSignupView(generics.CreateAPIView):
             mail_subject = 'Activate Your Account'
             message = render_to_string('acc_email.html', {
                 'user': user,
-                'password' : request.POST.get("password1"),
+                'password' : request.POST.get("password"),
                 'domain': current_site.domain,
                 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
                 'token': tokens.account_activation_token.make_token(user),
@@ -132,7 +140,7 @@ class AdminViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         
         if request.user.is_superuser:
-            queryset = models.UserProfile.objects.filter(company_site=request.user.company_site)
+            queryset = models.UserProfile.objects.filter(Q(company_site=request.user.company_site) & Q(is_superuser=True))
 
             page = self.paginate_queryset(queryset)
             if page is not None:
@@ -158,7 +166,7 @@ class AdminViewSet(viewsets.ModelViewSet):
                     mail_subject, message, to=[to_email]
         )
         email.send()
-        
+            
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
@@ -172,7 +180,13 @@ class AgentViewSet(viewsets.ModelViewSet):
     queryset = models.UserProfile.objects.all()
 
     authentication_classes = [TokenAuthentication]
-    permission_classes = (IsAuthenticated, permissions.HasAdminPermission, ) 
+    # permission_classes = (IsAuthenticated, permissions.HasAdminPermission, )
+    permission_classes_by_action = {'create': [permissions.HasAdminPermission],
+                                    'list': [permissions.HasAdminPermission],
+                                    'retrive': [IsAuthenticated],
+                                    'update': [permissions.CompanyPermission],
+                                    'partial_update': [permissions.CompanyPermission],
+                                    'destroy': [permissions.CompanyPermission],}
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -196,7 +210,7 @@ class AgentViewSet(viewsets.ModelViewSet):
 
 
     def list(self, request, *args, **kwargs):
-        queryset = models.UserProfile.objects.filter(created_by=request.user.id)
+        queryset = models.UserProfile.objects.filter(Q(company_site=request.user.company_site) & Q(is_superuser=False))
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -209,25 +223,25 @@ class AgentViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        if request.user.id == serializer.data.get('created_by'):
+        if (request.user.is_superuser == True and request.user.company_site == serializer.data.get('company_site')) or request.user.id == serializer.data.get('id'):
             return Response(serializer.data)
         return Response({"Message" : "You don't have permission"})
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.created_by == request.user:
-            partial = kwargs.pop('partial', False)
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
+        # if instance.company_site == request.user.company_site:
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
 
-            if getattr(instance, '_prefetched_objects_cache', None):
-                # If 'prefetch_related' has been applied to a queryset, we need to
-                # forcibly invalidate the prefetch cache on the instance.
-                instance._prefetched_objects_cache = {}
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
 
-            return Response(serializer.data)
-        return Response({"Message" : "You don't have permission to update"})
+        return Response(serializer.data)
+        # return Response({"Message" : "You don't have permission to update"})
     
 
     def perform_update(self, serializer):
@@ -247,6 +261,14 @@ class AgentViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         instance.delete()
+    
+    def get_permissions(self):
+        try:
+            # return permission_classes depending on `action` 
+            return [permission() for permission in self.permission_classes_by_action[self.action]]
+        except KeyError: 
+            # action is not set return default permission_classes
+            return [permission() for permission in self.permission_classes]
 
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name', 'email',)

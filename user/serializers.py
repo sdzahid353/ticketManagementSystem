@@ -1,13 +1,14 @@
 from rest_framework import serializers
-from . import models
+from django.db import models
+from .models import UserProfile
 
 
 class AgentSerializer(serializers.ModelSerializer):
     """Serializes a user profile object"""
 
     class Meta:
-        model = models.UserProfile
-        fields = ('id', 'name', 'email', 'username', 'password','created_by')
+        model = UserProfile
+        fields = ('id', 'name', 'email', 'username', 'password','created_by', 'company_site')
         extra_kwargs = {
             'password' : {
                 'write_only' : True,
@@ -15,18 +16,22 @@ class AgentSerializer(serializers.ModelSerializer):
             },
             'created_by' : {
                 'read_only' : True
+            },
+            'company_site' : {
+                'read_only' : True
             }
         }
     
     def create(self, validated_data):
         """Create and return a new user"""
 
-        user = models.UserProfile.objects.create_user(
+        user = UserProfile.objects.create_user(
             name=validated_data['name'],
             email=validated_data['email'],
             username=validated_data['username'],
             password=validated_data['password'], 
-            created_by =  self.context["request"].user 
+            created_by =  self.context["request"].user,
+            company_site = self.context['request'].user.company_site
         )
 
         return user
@@ -44,10 +49,11 @@ class AgentSerializer(serializers.ModelSerializer):
 class AdminSerializer(serializers.ModelSerializer):
     """Serializes a Admin profile object"""
 
+    agentss = AgentSerializer(many=True, read_only=True)
 
     class Meta:
-        model = models.UserProfile
-        fields = ('id', 'email', 'name', 'username', 'password', 'company_site')
+        model = UserProfile
+        fields = ('id', 'email', 'name', 'username', 'password', 'company_site', 'agentss')
         extra_kwargs = {
             'password': {
                 'write_only': True,
@@ -57,7 +63,8 @@ class AdminSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Create and return a new admin"""
-        user = models.UserProfile.objects.create_superuser(
+        # agents_data = validated_data.pop('agents')
+        user = UserProfile.objects.create_superuser(
             name=validated_data['name'],
             email=validated_data['email'],
             username=validated_data['username'],

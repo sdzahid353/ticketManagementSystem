@@ -15,9 +15,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework.documentation import include_docs_urls
+from rest_framework_swagger.views import get_swagger_view
+
+schema_view = get_swagger_view(title='TMS API')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('user/', include('user.urls')),
-    # path('ticekt/',include('ticket.urls')),
+    path('ticket/',include('ticket.urls')),
+    path('docs/', include_docs_urls(title='TMS API')),
+    path(r'swagger-docs/', schema_view),
 ]

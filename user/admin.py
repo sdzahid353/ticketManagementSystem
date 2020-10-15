@@ -13,6 +13,14 @@ class MyModelAdmin(admin.ModelAdmin):
     search_fields = ('username', 'name', 'email')
     # ordering = ('username',)
 
+
+    # def has_delete_permission(self, request, obj=None):
+    #     print("object")
+    #     print(obj)
+    #     print("requested email")
+    #     print(request.user.email)
+    #     return request.user.email == obj
+
     
     def get_queryset(self, request):
         qs = super(MyModelAdmin, self).get_queryset(request)
