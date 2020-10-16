@@ -42,16 +42,19 @@ class AgentSignupView(generics.CreateAPIView):
         form = self.form_class()
         serializer = self.get_serializer()
         if request.user.is_superuser:
-            return render(request, self.template_name, {'form': form})
-        return Response('login to add agent.')
+            return render(request, self.template_name, {'form': serializer})
+        raise PermissionDenied("You don't have permission.")
 
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST)
         serializer = self.get_serializer(data=request.data)
 
-        if form.is_valid():
+        if request.data.get("password") != request.data.get("confirm_password"):
+            return render(request, self.template_name, { "data": request.data, 'form': serializer, "error": "Password Mismatch"})
 
-            user = form.save()
+        if serializer.is_valid():
+
+            user = serializer.save()
             user.created_by = request.user
             user.company_site = request.user.company_site
             user.is_active = False # Deactivate account till it is confirmed
@@ -61,14 +64,14 @@ class AgentSignupView(generics.CreateAPIView):
             mail_subject = 'Activate Your Account'
             message = render_to_string('acc_email.html', {
                 'user': user,
-                'password' : request.POST.get("password"),
+                'password' : request.data.get("password"),
                 'domain': current_site.domain,
                 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
                 'token': tokens.account_activation_token.make_token(user),
             })
             # user.email_user(subject, message)
             print(request.POST.get('email'))
-            to_email = request.POST.get('email')
+            to_email = request.data.get('email')
             email = EmailMessage(
                         mail_subject, message, to=[to_email]
             )
@@ -78,7 +81,7 @@ class AgentSignupView(generics.CreateAPIView):
 
             return redirect('login')
 
-        return render(request, self.template_name, {'form': form})
+        return render(request, self.template_name, {"data": request.data,'form': serializer})
 
 
 class ActivateAccount(View):
@@ -100,32 +103,6 @@ class ActivateAccount(View):
         else:
             messages.warning(request, ('The confirmation link was invalid, possibly because it has already been used.'))
             return redirect('index')
-
-def signup(request):
-    if request.method == 'POST':
-        print(":: Request ::")
-        print(request)
-        print(':: request.post ::')
-        print(request.POST)
-        form = serializers.AdminSerializer(data=request.POST)
-        if form.is_valid():
-            user = form.save()
-            user.save()
-            # # current_site = get_current_site(request)
-            # mail_subject = 'Welcome to TMS'
-            # message = render_to_string('acc_email.html', {
-            #     'user': user
-            #     })
-            # to_email = form.validated_data.get('email')
-            # email = EmailMessage(
-            #             mail_subject, message, to=[to_email]
-            # )
-            # email.send()
-            return HttpResponse('Please confirm your email address to complete the registration')
-    else:
-        form = forms.AdminSignupForm()
-    return render(request, 'register.html', {'form': form})
-
 
 
 
@@ -279,6 +256,42 @@ class AdminCreateView(generics.CreateAPIView):
     serializer_class = serializers.AdminSerializer
     queryset = models.UserProfile.objects.all()
 
+    template_name = 'signup_admin.html'
+
+    authentication_classes = [TokenAuthentication]
+
+    def get(self, request, *args, **kwargs):
+        serializer = self.get_serializer()
+        return render(request, self.template_name, {'form': serializer})
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        if request.data.get("password") != request.data.get("confirm_password"):
+            return render(request, self.template_name, { "data": request.data, 'form': serializer, "error": "Password Mismatch"})
+
+        if serializer.is_valid():
+
+            user = serializer.save()
+            user.save()
+
+            current_site = get_current_site(request)
+            mail_subject = 'Welcome to Ticket Management System'
+            message = render_to_string('admin_email.html', {
+                'user': request.data.get('name'),
+                'company_site' : request.data.get('company_site'),
+            })
+            to_email = request.data.get('email')
+            email = EmailMessage(
+                        mail_subject, message, to=[to_email]
+            )
+            email.send()
+
+            messages.success(request, ('Admin Account Created Successfully'))
+
+            return redirect('login')
+
+        return render(request, self.template_name, {"data": request.data,'form': serializer})
 
     # def post(self, request, *args, **kwargs):
     #     serializer = self.get_serializer(data=request.data)

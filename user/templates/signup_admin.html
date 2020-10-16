@@ -61,6 +61,13 @@
                                                 {% endif %} 
                                             />
                                         </div>
+                                        <div class="form-group">
+                                            <input name="company_site" type="text" class="form-control" placeholder="Your Company Website *" 
+                                                {% if data.company_site is not None %}
+                                                    value="{{data.company_site}}"
+                                                {% endif %} 
+                                            />
+                                        </div>
                                         
                                         {% if error %}
                                         <div class="alert alert-danger">

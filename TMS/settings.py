@@ -58,7 +58,8 @@ INSTALLED_APPS = [
     'crispy_forms',
     'django_email_verification',
     'ticket',
-    'rest_framework_swagger'
+    'rest_framework_swagger',
+    'django.contrib.admindocs',
 ]
 
 MIDDLEWARE = [

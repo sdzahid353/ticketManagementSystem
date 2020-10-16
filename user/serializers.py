@@ -24,6 +24,7 @@ class AgentSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         """Create and return a new user"""
+            
 
         user = UserProfile.objects.create_user(
             name=validated_data['name'],

@@ -22,6 +22,7 @@ schema_view = get_swagger_view(title='TMS API')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('admin/doc/', include('django.contrib.admindocs.urls')),
     path('user/', include('user.urls')),
     path('ticket/',include('ticket.urls')),
     path('docs/', include_docs_urls(title='TMS API')),
