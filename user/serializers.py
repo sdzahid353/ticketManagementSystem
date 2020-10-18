@@ -61,6 +61,14 @@ class AdminSerializer(serializers.ModelSerializer):
                 'style': {'input_type': 'password'}
             }
         }
+    
+    def __init__(self, *args, **kwargs):
+        # self.user = kwargs.pop('user')
+        super(AdminSerializer, self).__init__(*args, **kwargs)
+        print(self)
+
+    def validate(self, data):
+        return data
 
     def create(self, validated_data):
         """Create and return a new admin"""
@@ -81,6 +89,15 @@ class AdminSerializer(serializers.ModelSerializer):
         if 'password' in validated_data:
             password = validated_data.pop('password')
             instance.set_password(password)
+
+        if validated_data['name'] == '':
+            validated_data['name'] = instance.name
+        if validated_data['username'] == '':
+            validated_data['username'] = instance.username
+        if validated_data['email'] == '':
+            validated_data['email'] = instance.email
+        if validated_data['company_site'] == '':
+            validated_data['company_site'] = instance.company_site
 
         return super().update(instance, validated_data)
         

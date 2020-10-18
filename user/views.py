@@ -13,6 +13,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import force_bytes, force_text
@@ -20,6 +21,9 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 from django.db.models import Q
+from django.template import loader
+from django.http import HttpResponse
+from django import template
 
 
 from . import serializers, models, permissions, tokens
@@ -27,9 +31,51 @@ from . import forms
 
 
 
-
+@login_required(login_url="/login/")
 def index(request): 
-    return render(request, 'signup_agent.html', {'title':'index'}) 
+    return render(request, 'index.html')
+
+def login_view(request):
+    form = forms.LoginForm(request.POST or None)
+
+    msg = None
+
+    if request.method == "POST":
+
+        if form.is_valid():
+            username = form.cleaned_data.get("username")
+            password = form.cleaned_data.get("password")
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect("/index")
+            else:    
+                msg = 'Invalid credentials'    
+        else:
+            msg = 'Error validating the form'    
+
+    return render(request, "accounts/login.html", {"form": form, "msg" : msg})
+
+@login_required(login_url="/login/")
+def pages(request):
+    context = {}
+    # All resource paths end in .html.
+    # Pick out the html file name from the url. And load that template.
+    try:
+        
+        load_template = request.path.split('/')[-1]
+        html_template = loader.get_template( load_template )
+        return HttpResponse(html_template.render(context, request))
+        
+    except template.TemplateDoesNotExist:
+
+        html_template = loader.get_template( 'error-404.html' )
+        return HttpResponse(html_template.render(context, request))
+
+    except:
+    
+        html_template = loader.get_template( 'error-500.html' )
+        return HttpResponse(html_template.render(context, request))
 
 class AgentSignupView(generics.CreateAPIView):
     form_class = forms.SignupForm
@@ -256,19 +302,22 @@ class AdminCreateView(generics.CreateAPIView):
     serializer_class = serializers.AdminSerializer
     queryset = models.UserProfile.objects.all()
 
-    template_name = 'signup_admin.html'
+    template_name = 'accounts/register.html'
 
     authentication_classes = [TokenAuthentication]
 
+    msg     = None
+    success = False
+
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer()
-        return render(request, self.template_name, {'form': serializer})
+        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
 
         if request.data.get("password") != request.data.get("confirm_password"):
-            return render(request, self.template_name, { "data": request.data, 'form': serializer, "error": "Password Mismatch"})
+            return render(request, self.template_name, { "data": request.data, 'form': serializer, "msg" : "Password Mismatch", "success" : False})
 
         if serializer.is_valid():
 
@@ -289,9 +338,22 @@ class AdminCreateView(generics.CreateAPIView):
 
             messages.success(request, ('Admin Account Created Successfully'))
 
-            return redirect('login')
+            username = request.data.get("username")
+            raw_password = request.data.get("password")
+            user = authenticate(username=username, password=raw_password)
 
-        return render(request, self.template_name, {"data": request.data,'form': serializer})
+            msg     = 'User created.'
+            success = True
+            
+            login(request, user)
+            return redirect("/index/")
+            
+            # return redirect("/login/")
+
+
+            # return render(request, "accounts/register.html", {"form": serializer, "msg" : msg, "success" : success })
+
+        return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
 
     # def post(self, request, *args, **kwargs):
     #     serializer = self.get_serializer(data=request.data)
@@ -308,9 +370,55 @@ class AdminCreateView(generics.CreateAPIView):
 class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.AdminSerializer
     queryset =  models.UserProfile.objects.all()
+    template_name = 'edit_profile.html'
 
-    authentication_classes = (TokenAuthentication,)
-    permission_classes = (permissions.ProfilePermission, permissions.HasAdminPermission)
+    # authentication_classes = (TokenAuthentication,)
+    # permission_classes = (permissions.ProfilePermission, permissions.HasAdminPermission)
+
+    msg     = None
+    success = False
+
+    def get(self, request, *args, **kwargs):
+        print(":::Get :::")
+        serializer = self.get_serializer()
+        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
+
+    def post(self, request, *args, **kwargs):
+        print(":::Editing Started :::")
+        instance = get_object_or_404(models.UserProfile, id=request.user.id)
+        serializer = self.get_serializer(data=request.data, instance=instance)
+        print("::: After serializer :::")
+
+        # if serializer.is_valid():
+    
+        # serializer.is_valid()
+        request.data._mutable = True
+        user = serializer.update(instance, request.data)
+        request.data._mutable = False
+        user.save()
+        print("user")
+        print(user)
+        print("user.data")
+        # print(user.data)
+
+
+
+
+            
+
+        messages.success(request, ('Profile Edited Successfully'))
+
+        msg     = None
+        success = False
+            
+            
+
+
+        return render(request, self.template_name, {"form": serializer, "msg" : msg, "success" : success })
+
+        # return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
+
+
 
 
 class UserLoginApiView(ObtainAuthToken):
