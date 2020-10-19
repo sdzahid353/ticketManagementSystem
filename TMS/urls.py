@@ -21,7 +21,7 @@ from rest_framework_swagger.views import get_swagger_view
 schema_view = get_swagger_view(title='TMS API')
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('adminuser/', admin.site.urls),
     path('admin/doc/', include('django.contrib.admindocs.urls')),
     path('', include('user.urls')),
     path('ticket/',include('ticket.urls')),

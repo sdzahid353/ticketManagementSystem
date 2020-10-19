@@ -1,0 +1,109 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} Profile {% endblock title %}
+
+{% block content %}
+
+    <!-- Header -->
+    <div class="header pb-8 pt-5 pt-lg-8 d-flex align-items-center" 
+         style="min-height: 600px; background-image: url(/static/assets/img/theme/profile-cover.jpg); background-size: cover; background-position: center top;">
+      <!-- Mask -->
+      <span class="mask bg-gradient-default opacity-8"></span>
+      <!-- Header container -->
+      <div class="container-fluid d-flex align-items-center">
+        <div class="row">
+          <div class="col-lg-7 col-md-10">
+            <h1 class="display-2 text-white">Hello {{ request.user.name }}</h1>
+          </div>
+          <div class="col-lg-7 col-md-10">
+            <p class="text-white mt-0 mb-5">You can change your password of your profile here</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid mt--7">
+
+      <div class="row">
+        <div class="col-xl-8 order-xl-1">
+          <div class="card bg-secondary shadow">
+            <div class="card-header bg-white border-0">
+              <div class="row align-items-center">
+                <div class="col-6">
+                  <h3 class="mb-0">Change Password</h3>
+                </div>
+                <div class="col-3 text-right">
+                    <a href="/profile.html" class="btn btn-info">My Profile</a>
+                  </div>
+                <div class="col-3 text-right">
+                    <a href="{% url 'admin_update' %}" class="btn btn-info">Edit profile</a>
+                </div>
+              </div>
+            </div>
+            <form method="POST" action="/password_change/">
+                    {% csrf_token %}
+                    <h6 class="heading-small text-muted mb-2" style="text-indent: 35px; padding-top: 30px;">Edit your password</h6>
+                    <div class="pl-lg-8">
+                      <div class="row">
+                        <div class="col-lg-9">
+                          <div class="form-group">
+                            <label class="form-control-label">Old Password</label>
+                            <input type="password" name = "password" class="form-control form-control-alternative" placeholder="" 
+                                   value="">
+                          </div>
+                          <div>
+                              {% if old_password %}
+                              {{ old_password }}
+                              {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-lg-9">
+                          <div class="form-group">
+                            <label class="form-control-label" >Enter New Password</label>
+                            <input type="password" name="new_password" class="form-control form-control-alternative" 
+                                   placeholder="">
+                          </div>
+                          <div>
+                        </div>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-lg-9">
+                          <div class="form-group">
+                            <label class="form-control-label" >Confirm NewPassword</label>
+                            <input type="password" name="confirm_new_password" class="form-control form-control-alternative" placeholder="" >
+                          </div>
+                          <div>
+                            {% if msg %}
+                            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                <strong>{{msg}}</strong>
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                  <span aria-hidden="true">&times;</span>
+                                </button>
+                              </div>
+                              
+                            {% endif %}
+                        </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-center">
+                      <button type="submit" class="btn btn-primary my-4">Save</button>
+                    </div>
+                  </form>
+                </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% include "includes/footer.html" %}
+
+    </div>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE --> 
+{% block javascripts %}{% endblock javascripts %}

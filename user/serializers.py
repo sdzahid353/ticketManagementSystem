@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.db import models
+from django.contrib.auth.password_validation import validate_password
+from django.utils.translation import gettext_lazy as _
 from .models import UserProfile
 
 
@@ -62,11 +64,7 @@ class AdminSerializer(serializers.ModelSerializer):
             }
         }
     
-    def __init__(self, *args, **kwargs):
-        # self.user = kwargs.pop('user')
-        super(AdminSerializer, self).__init__(*args, **kwargs)
-        print(self)
-
+    
     def validate(self, data):
         return data
 
@@ -100,4 +98,31 @@ class AdminSerializer(serializers.ModelSerializer):
             validated_data['company_site'] = instance.company_site
 
         return super().update(instance, validated_data)
-        
+
+
+class ChangePasswordSerializer(serializers.ModelSerializer):
+    model = UserProfile
+
+    """
+    Serializer for password change endpoint.
+    """
+    # old_password = serializers.CharField(max_length=128, write_only=True, required=True)
+    new_password = serializers.CharField(max_length=128, write_only=True, required=True)
+    confirm_new_password = serializers.CharField(max_length=128, write_only=True, required=True)
+
+    class Meta:
+        model = UserProfile
+        fields = ("password", "new_password", "confirm_new_password")
+
+
+    def update(self, instance, validated_data):
+        """Handle updating admin account"""
+        # if 'password' in validated_data:
+        password = validated_data['new_password']
+        instance.set_password(password)
+        instance.save()
+        return instance
+
+        # return super().update(instance, validated_data)
+
+

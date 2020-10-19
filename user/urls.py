@@ -21,5 +21,6 @@ urlpatterns = [
     path('agentsignup/', views.AgentSignupView.as_view(), name='agent_signup'),
     path('activate/<uidb64>/<token>/', views.ActivateAccount.as_view(), name='activate'),
     path('adminupdate/', views.AdminUpdateView.as_view(), name='admin_update'),
+    path('password_change/', views.ChangePasswordView.as_view(), name='admin_password_change'),
     path('', include(router.urls)),
 ]

@@ -11,6 +11,7 @@ from rest_framework import filters
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
+from rest_framework.authtoken.models import Token
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
@@ -345,26 +346,16 @@ class AdminCreateView(generics.CreateAPIView):
             msg     = 'User created.'
             success = True
             
-            login(request, user)
-            return redirect("/index/")
+            # login(request, user)
+            # return redirect("/index/")
             
             # return redirect("/login/")
 
 
-            # return render(request, "accounts/register.html", {"form": serializer, "msg" : msg, "success" : success })
+            return render(request, "accounts/register.html", {"form": serializer, "msg" : msg, "success" : success })
 
         return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
 
-    # def post(self, request, *args, **kwargs):
-    #     serializer = self.get_serializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     user = serializer.save()
-    #     # headers = self.get_success_headers(serializer.data)
-    #     return render(request, 'register.html', {'form': user})
-
-    
-    # authentication_classes = (TokenAuthentication,)
-    # permission_classes = (permissions.ProfilePermission,)
 
 
 class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
@@ -396,27 +387,66 @@ class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
         user = serializer.update(instance, request.data)
         request.data._mutable = False
         user.save()
-        print("user")
-        print(user)
-        print("user.data")
-        # print(user.data)
 
-
-
-
-            
+        
 
         messages.success(request, ('Profile Edited Successfully'))
 
         msg     = None
-        success = False
+        success = True
             
             
-
-
         return render(request, self.template_name, {"form": serializer, "msg" : msg, "success" : success })
 
         # return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
+
+
+class ChangePasswordView(generics.UpdateAPIView):
+    """
+    An endpoint for changing password.
+    """
+    serializer_class = serializers.ChangePasswordSerializer
+    template_name = 'change_pass.html'
+
+    def get(self, request, *args, **kwargs):
+        print(":::Get :::")
+        serializer = self.get_serializer()
+        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
+
+    def get_object(self, queryset=None):
+        obj = self.request.user
+        return obj
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        instance = get_object_or_404(models.UserProfile, id=request.user.id)
+        serializer = self.get_serializer(data=request.data, instance=instance)
+
+        if not self.object.check_password(request.data.get("password")):
+            return render(request, self.template_name, {'form': serializer, "msg" : "Wrong password.", "success" : False})
+
+        if request.data.get("new_password") == '' :
+            return render(request, self.template_name, {'form': serializer, "msg" : "Password should not be empty", "success" : False})
+        elif request.data.get("confirm_new_password") == '':
+            return render(request, self.template_name, {'form': serializer, "msg" : "Please Enter Confirm Password", "success" : False})
+
+
+        
+        if request.data.get('new_password') != request.data.get('confirm_new_password'):
+            return render(request, self.template_name, {'form': serializer, "msg" : "New Password and Confirm password are different", "success" : False})
+        
+        request.data._mutable = True
+        user = serializer.update(instance, request.data)
+        user.save()
+        request.data._mutable = False
+
+
+        msg = "Password Changed Successfully"
+
+        
+            
+        login(request, user)
+        return render(request, self.template_name, {'form': serializer, "msg" : msg, "success" : True})
 
 
 
