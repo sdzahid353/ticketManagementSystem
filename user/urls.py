@@ -23,4 +23,6 @@ urlpatterns = [
     path('adminupdate/', views.AdminUpdateView.as_view(), name='admin_update'),
     path('password_change/', views.ChangePasswordView.as_view(), name='admin_password_change'),
     path('', include(router.urls)),
+    path('forgot_password/', views.pass_view, name="forgot_pass"),
+
 ]

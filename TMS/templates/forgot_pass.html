@@ -45,26 +45,14 @@
                     {{ form.password }}
                   </div>
                 </div>
-                <div class="custom-control custom-control-alternative custom-checkbox" style="float: left;" >
-                  <input class="custom-control-input" id=" customCheckLogin" type="checkbox">
-                  <label class="custom-control-label" for=" customCheckLogin">
-                    <span class="text-muted">Remember me</span>
-                  </label>
-                </div>
-                <div  class="text-right" style="float: right;font-size:14px; text-decoration:underline">
-                  <a href="{% url 'forgot_pass' %}" target="_blank">Forgot Password</a>
-                </div>
-                <div class="text-center" style="padding: 20px;">
+               
+                <div class="text-center">
                   <button type="submit" class="btn btn-primary my-4">Sign in</button>
                 </div>
               </form>
             </div>
           </div>
-          <div class="row mt-3">
-            <div class="col-6">
-              <a href="{% url 'admin_signup' %}" class="text-light"><small>Register Admin Account</small></a>
-            </div>
-            </div>
+          
         </div>
       </div>
     </div>
