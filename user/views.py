@@ -14,6 +14,8 @@ from django.urls import reverse_lazy
 from rest_framework.authtoken.models import Token
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.contrib.sites.shortcuts import get_current_site
@@ -56,28 +58,6 @@ def login_view(request):
             msg = 'Error validating the form'    
 
     return render(request, "accounts/login.html", {"form": form, "msg" : msg})
-
-
-def pass_view(request):
-    form = forms.LoginForm(request.POST or None)
-
-    msg = None
-
-    if request.method == "POST":
-
-        if form.is_valid():
-            username = form.cleaned_data.get("username")
-            password = form.cleaned_data.get("password")
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                return redirect("/index")
-            else:    
-                msg = 'Invalid credentials'    
-        else:
-            msg = 'Error validating the form'    
-
-    return render(request, "forgot_pass.html", {"form": form, "msg" : msg})
 
 
 @login_required(login_url="/login/")
@@ -343,6 +323,9 @@ class AdminCreateView(generics.CreateAPIView):
         if request.data.get("password") != request.data.get("confirm_password"):
             return render(request, self.template_name, { "data": request.data, 'form': serializer, "msg" : "Password Mismatch", "success" : False})
 
+        if models.UserProfile.objects.filter(Q(username=request.data.get('username')) | Q(email=request.data.get('email'))).exists():
+            return render(request, self.template_name, { "data": request.data, 'form': serializer, "msg" : "user already exists", "success" : False})
+
         if serializer.is_valid():
 
             user = serializer.save()
@@ -378,6 +361,44 @@ class AdminCreateView(generics.CreateAPIView):
             return render(request, "accounts/register.html", {"form": serializer, "msg" : msg, "success" : success })
 
         return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
+
+
+def password_reset_request(request):
+	
+    if request.method == "POST":
+        password_reset_form = PasswordResetForm(request.POST)
+        if password_reset_form.is_valid():
+            email = password_reset_form.cleaned_data['email']
+            associated_users = models.UserProfile.objects.filter(Q(email=email))
+            user = associated_users[0]
+            if associated_users.exists() and user.is_superuser:
+                # for user in associated_users:
+                current_site = get_current_site(request)
+                mail_subject = "Password Reset Requested"
+                email_template_name = "password/password_reset_subject.txt"
+                c = {
+                "email":user.email,
+                'domain':current_site.domain,
+                'site_name': user.company_site,
+                "uid": urlsafe_base64_encode(force_bytes(user.pk)),
+                "user": user,
+                'token': default_token_generator.make_token(user),
+                'protocol': 'http',
+                }
+                message = render_to_string(email_template_name, c)
+                to_email = user.email
+                email = EmailMessage(
+                        mail_subject, message, to=[to_email]
+                    )
+                email.send()
+                # try:
+                # 	send_mail(subject, email, 'admin@example.com' , [user.email], fail_silently=False)
+                # except BadHeaderError:
+                #     return HttpResponse('Invalid header found.')
+                return redirect ("/password_reset/done/")
+	
+    password_reset_form = PasswordResetForm()
+    return render(request=request, template_name="password/password_reset.html", context={"password_reset_form":password_reset_form})
 
 
 
