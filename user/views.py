@@ -27,6 +27,7 @@ from django.db.models import Q
 from django.template import loader
 from django.http import HttpResponse
 from django import template
+from django.core.paginator import Paginator
 
 
 from . import serializers, models, permissions, tokens
@@ -80,6 +81,8 @@ def pages(request):
     
         html_template = loader.get_template( 'error-500.html' )
         return HttpResponse(html_template.render(context, request))
+
+
 
 class AgentSignupView(generics.CreateAPIView):
     form_class = forms.SignupForm
@@ -145,7 +148,6 @@ class ActivateAccount(View):
 
         if user is not None and tokens.account_activation_token.check_token(user, token):
             user.is_active = True
-            # user.profile.email_confirmed = True
             user.save()
             # login(request, user)
             messages.success(request, ('Your account have been confirmed.'))
@@ -154,6 +156,230 @@ class ActivateAccount(View):
             messages.warning(request, ('The confirmation link was invalid, possibly because it has already been used.'))
             return redirect('index')
 
+
+
+class AdminCreateView(generics.CreateAPIView):
+    serializer_class = serializers.AdminSerializer
+    queryset = models.UserProfile.objects.all()
+
+    template_name = 'accounts/register.html'
+
+    authentication_classes = [TokenAuthentication]
+
+    msg     = None
+    success = False
+
+    def get(self, request, *args, **kwargs):
+        serializer = self.get_serializer()
+        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        if request.data.get("password") != request.data.get("confirm_password"):
+            return render(request, self.template_name, { "data": request.data, 'form': serializer, "msg" : "Password Mismatch", "success" : False})
+
+        if models.UserProfile.objects.filter(Q(username=request.data.get('username')) | Q(email=request.data.get('email'))).exists():
+            return render(request, self.template_name, { "data": request.data, 'form': serializer, "msg" : "user already exists", "success" : False})
+
+        if serializer.is_valid():
+
+            user = serializer.save()
+            user.save()
+
+            current_site = get_current_site(request)
+            mail_subject = 'Welcome to Ticket Management System'
+            message = render_to_string('admin_email.html', {
+                'user': request.data.get('name'),
+                'company_site' : request.data.get('company_site'),
+            })
+            to_email = request.data.get('email')
+            email = EmailMessage(
+                        mail_subject, message, to=[to_email]
+            )
+            email.send()
+
+            messages.success(request, ('Admin Account Created Successfully'))
+
+            username = request.data.get("username")
+            raw_password = request.data.get("password")
+            user = authenticate(username=username, password=raw_password)
+
+            msg     = 'User created.'
+            success = True
+            
+            # login(request, user)
+            # return redirect("/index/")
+            
+            # return redirect("/login/")
+
+
+            return render(request, "accounts/register.html", {"form": serializer, "msg" : msg, "success" : success })
+
+        return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
+
+
+def password_reset_request(request):
+	
+    if request.method == "POST":
+        password_reset_form = forms.PasswordResetForm(request.POST)
+        if password_reset_form.is_valid():
+            email = password_reset_form.cleaned_data['email']
+            associated_users = models.UserProfile.objects.filter(Q(email=email))
+            # user = models.UserProfile.objects.get(email=email)
+            if associated_users.exists() and associated_users[0].is_superuser:
+                for user in associated_users:
+                    current_site = get_current_site(request)
+                    mail_subject = "Password Reset Requested"
+                    email_template_name = "password/password_reset_subject.txt"
+                    c = {
+                    "email":user.email,
+                    'domain':current_site.domain,
+                    'site_name': user.company_site,
+                    "uid": urlsafe_base64_encode(force_bytes(user.pk)),
+                    "user": user,
+                    'token': default_token_generator.make_token(user),
+                    'protocol': 'http',
+                    }
+                    message = render_to_string(email_template_name, c)
+                    to_email = user.email
+                    email = EmailMessage(
+                            mail_subject, message, to=[to_email]
+                        )
+                    email.send()
+                    # try:
+                    # 	send_mail(subject, email, 'admin@example.com' , [user.email], fail_silently=False)
+                    # except BadHeaderError:
+                    #     return HttpResponse('Invalid header found.')
+                    return redirect ("/password_reset/done/")
+        return render(request=request, template_name="password/password_reset.html", context={"password_reset_form":password_reset_form, "msg":"Please enter your registered email address"})
+    password_reset_form = forms.PasswordResetForm()
+    return render(request=request, template_name="password/password_reset.html", context={"password_reset_form":password_reset_form})
+
+
+
+class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = serializers.AdminSerializer
+    queryset =  models.UserProfile.objects.all()
+    template_name = 'edit_profile.html'
+
+    # authentication_classes = (TokenAuthentication,)
+    # permission_classes = (permissions.ProfilePermission, permissions.HasAdminPermission)
+
+    msg     = None
+    success = False
+
+    def get(self, request, *args, **kwargs):
+        print(":::Get :::")
+        serializer = self.get_serializer()
+        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
+
+    def post(self, request, *args, **kwargs):
+        print(":::Editing Started :::")
+        instance = get_object_or_404(models.UserProfile, id=request.user.id)
+        serializer = self.get_serializer(data=request.data, instance=instance)
+        print("::: After serializer :::")
+
+        # if serializer.is_valid():
+    
+        # serializer.is_valid()
+        request.data._mutable = True
+        user = serializer.update(instance, request.data)
+        request.data._mutable = False
+        user.save()
+
+        
+
+        messages.success(request, ('Profile Edited Successfully'))
+
+        msg     = None
+        success = True
+            
+            
+        return render(request, self.template_name, {"form": serializer, "msg" : msg, "success" : success })
+
+        # return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
+
+
+class ChangePasswordView(generics.UpdateAPIView):
+    """
+    An endpoint for changing password.
+    """
+    serializer_class = serializers.ChangePasswordSerializer
+    template_name = 'change_pass.html'
+
+    def get(self, request, *args, **kwargs):
+        serializer = self.get_serializer()
+        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
+
+    def get_object(self, queryset=None):
+        obj = self.request.user
+        return obj
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        instance = get_object_or_404(models.UserProfile, id=request.user.id)
+        serializer = self.get_serializer(data=request.data, instance=instance)
+
+        if not self.object.check_password(request.data.get("password")):
+            return render(request, self.template_name, {'form': serializer, "msg" : "Wrong password.", "success" : False})
+
+        if request.data.get("new_password") == '' :
+            return render(request, self.template_name, {'form': serializer, "msg" : "Password should not be empty", "success" : False})
+        elif request.data.get("confirm_new_password") == '':
+            return render(request, self.template_name, {'form': serializer, "msg" : "Please Enter Confirm Password", "success" : False})
+
+
+        
+        if request.data.get('new_password') != request.data.get('confirm_new_password'):
+            return render(request, self.template_name, {'form': serializer, "msg" : "New Password and Confirm password are different", "success" : False})
+        
+        request.data._mutable = True
+        user = serializer.update(instance, request.data)
+        user.save()
+        request.data._mutable = False
+
+
+        msg = "Password Changed Successfully"
+
+        
+            
+        login(request, user)
+        return render(request, self.template_name, {'form': serializer, "msg" : msg, "success" : True})
+
+
+class AgentsView(generics.ListAPIView ,generics.RetrieveUpdateDestroyAPIView):
+    
+    serializer_class = serializers.AgentSerializer
+    queryset = models.UserProfile.objects.all()
+
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = (IsAuthenticated, permissions.HasAdminPermission, )
+    permission_classes_by_action = {'create': [permissions.HasAdminPermission],
+                                    'list': [permissions.HasAdminPermission],
+                                    'retrive': [IsAuthenticated],
+                                    'update': [permissions.CompanyPermission],
+                                    'partial_update': [permissions.CompanyPermission],
+                                    'destroy': [permissions.CompanyPermission],}
+    
+    def list(self, request, *args, **kwargs):
+        queryset = models.UserProfile.objects.filter(Q(company_site=request.user.company_site) & Q(is_superuser=False))
+        paginator = Paginator(queryset, 5)
+
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
+        agents = paginator.page(page_number)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return render(request, 'agents.html',{"agents" : agents})
+
+    
 
 
 class AdminViewSet(viewsets.ModelViewSet):
@@ -299,199 +525,6 @@ class AgentViewSet(viewsets.ModelViewSet):
 
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name', 'email',)
-
-
-
-class AdminCreateView(generics.CreateAPIView):
-    serializer_class = serializers.AdminSerializer
-    queryset = models.UserProfile.objects.all()
-
-    template_name = 'accounts/register.html'
-
-    authentication_classes = [TokenAuthentication]
-
-    msg     = None
-    success = False
-
-    def get(self, request, *args, **kwargs):
-        serializer = self.get_serializer()
-        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-
-        if request.data.get("password") != request.data.get("confirm_password"):
-            return render(request, self.template_name, { "data": request.data, 'form': serializer, "msg" : "Password Mismatch", "success" : False})
-
-        if models.UserProfile.objects.filter(Q(username=request.data.get('username')) | Q(email=request.data.get('email'))).exists():
-            return render(request, self.template_name, { "data": request.data, 'form': serializer, "msg" : "user already exists", "success" : False})
-
-        if serializer.is_valid():
-
-            user = serializer.save()
-            user.save()
-
-            current_site = get_current_site(request)
-            mail_subject = 'Welcome to Ticket Management System'
-            message = render_to_string('admin_email.html', {
-                'user': request.data.get('name'),
-                'company_site' : request.data.get('company_site'),
-            })
-            to_email = request.data.get('email')
-            email = EmailMessage(
-                        mail_subject, message, to=[to_email]
-            )
-            email.send()
-
-            messages.success(request, ('Admin Account Created Successfully'))
-
-            username = request.data.get("username")
-            raw_password = request.data.get("password")
-            user = authenticate(username=username, password=raw_password)
-
-            msg     = 'User created.'
-            success = True
-            
-            # login(request, user)
-            # return redirect("/index/")
-            
-            # return redirect("/login/")
-
-
-            return render(request, "accounts/register.html", {"form": serializer, "msg" : msg, "success" : success })
-
-        return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
-
-
-def password_reset_request(request):
-	
-    if request.method == "POST":
-        password_reset_form = PasswordResetForm(request.POST)
-        if password_reset_form.is_valid():
-            email = password_reset_form.cleaned_data['email']
-            associated_users = models.UserProfile.objects.filter(Q(email=email))
-            user = associated_users[0]
-            if associated_users.exists() and user.is_superuser:
-                # for user in associated_users:
-                current_site = get_current_site(request)
-                mail_subject = "Password Reset Requested"
-                email_template_name = "password/password_reset_subject.txt"
-                c = {
-                "email":user.email,
-                'domain':current_site.domain,
-                'site_name': user.company_site,
-                "uid": urlsafe_base64_encode(force_bytes(user.pk)),
-                "user": user,
-                'token': default_token_generator.make_token(user),
-                'protocol': 'http',
-                }
-                message = render_to_string(email_template_name, c)
-                to_email = user.email
-                email = EmailMessage(
-                        mail_subject, message, to=[to_email]
-                    )
-                email.send()
-                # try:
-                # 	send_mail(subject, email, 'admin@example.com' , [user.email], fail_silently=False)
-                # except BadHeaderError:
-                #     return HttpResponse('Invalid header found.')
-                return redirect ("/password_reset/done/")
-	
-    password_reset_form = PasswordResetForm()
-    return render(request=request, template_name="password/password_reset.html", context={"password_reset_form":password_reset_form})
-
-
-
-class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = serializers.AdminSerializer
-    queryset =  models.UserProfile.objects.all()
-    template_name = 'edit_profile.html'
-
-    # authentication_classes = (TokenAuthentication,)
-    # permission_classes = (permissions.ProfilePermission, permissions.HasAdminPermission)
-
-    msg     = None
-    success = False
-
-    def get(self, request, *args, **kwargs):
-        print(":::Get :::")
-        serializer = self.get_serializer()
-        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
-
-    def post(self, request, *args, **kwargs):
-        print(":::Editing Started :::")
-        instance = get_object_or_404(models.UserProfile, id=request.user.id)
-        serializer = self.get_serializer(data=request.data, instance=instance)
-        print("::: After serializer :::")
-
-        # if serializer.is_valid():
-    
-        # serializer.is_valid()
-        request.data._mutable = True
-        user = serializer.update(instance, request.data)
-        request.data._mutable = False
-        user.save()
-
-        
-
-        messages.success(request, ('Profile Edited Successfully'))
-
-        msg     = None
-        success = True
-            
-            
-        return render(request, self.template_name, {"form": serializer, "msg" : msg, "success" : success })
-
-        # return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
-
-
-class ChangePasswordView(generics.UpdateAPIView):
-    """
-    An endpoint for changing password.
-    """
-    serializer_class = serializers.ChangePasswordSerializer
-    template_name = 'change_pass.html'
-
-    def get(self, request, *args, **kwargs):
-        print(":::Get :::")
-        serializer = self.get_serializer()
-        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
-
-    def get_object(self, queryset=None):
-        obj = self.request.user
-        return obj
-
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        instance = get_object_or_404(models.UserProfile, id=request.user.id)
-        serializer = self.get_serializer(data=request.data, instance=instance)
-
-        if not self.object.check_password(request.data.get("password")):
-            return render(request, self.template_name, {'form': serializer, "msg" : "Wrong password.", "success" : False})
-
-        if request.data.get("new_password") == '' :
-            return render(request, self.template_name, {'form': serializer, "msg" : "Password should not be empty", "success" : False})
-        elif request.data.get("confirm_new_password") == '':
-            return render(request, self.template_name, {'form': serializer, "msg" : "Please Enter Confirm Password", "success" : False})
-
-
-        
-        if request.data.get('new_password') != request.data.get('confirm_new_password'):
-            return render(request, self.template_name, {'form': serializer, "msg" : "New Password and Confirm password are different", "success" : False})
-        
-        request.data._mutable = True
-        user = serializer.update(instance, request.data)
-        user.save()
-        request.data._mutable = False
-
-
-        msg = "Password Changed Successfully"
-
-        
-            
-        login(request, user)
-        return render(request, self.template_name, {'form': serializer, "msg" : msg, "success" : True})
-
 
 
 

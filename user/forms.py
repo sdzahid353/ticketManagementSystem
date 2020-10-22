@@ -29,6 +29,17 @@ class SignupForm(UserCreationForm):
         model = models.UserProfile
         fields = ('email', 'name', 'username', 'company_site')
 
+class PasswordResetForm(forms.Form):
+    email = forms.EmailField(
+        widget=forms.EmailInput(
+            attrs={
+                "placeholder" : "Enter Registered Email",
+                "value"       : "",
+                "class"       : "form-control",
+                "autocomplete": "email"
+            }
+        ))
+
 
 # class AgentSignupForm(UserCreationForm):
     
