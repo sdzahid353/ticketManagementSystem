@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework import generics
-from django.views.generic import View, UpdateView
+from django.views.generic import View, UpdateView, ListView
 from rest_framework.response import Response
 from rest_framework import viewsets,status
 from rest_framework.authentication import TokenAuthentication
@@ -440,6 +440,38 @@ class AgentCreateView(generics.CreateAPIView):
             return render(request, self.template_name, {"form": serializer, "msg" : msg, "success" : success })
 
         return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
+
+
+class SearchPostView(ListView):
+    model = models.UserProfile
+    queryset = model.objects.filter(email = "email")
+    template_name = "agents.html"
+    context_object_name = "agents"
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        query = self.request.GET.get('q')
+        context['query'] = query
+        lst = []
+        for x in context['agents']:
+            print("::: x :::")
+            print(x)
+            if x.created_by != self.request.user or x.is_superuser == True:
+                lst.append(x.id)
+                print("::: lst :::")
+                print(lst)
+        context['agents'].filter(~Q(id__in=lst))
+        return context
+
+    def get_queryset(self, *args, **kwargs):
+        request = self.request
+        method_dict = request.GET
+        query = method_dict.get('q', None)
+        if query is not None:
+            if query != '':
+                data = models.UserProfile.objects.filter(email__icontains=query)
+                return data
+        return HttpResponse("Agent not found")
 
 
 class AdminViewSet(viewsets.ModelViewSet):
