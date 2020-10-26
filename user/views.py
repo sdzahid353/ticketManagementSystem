@@ -452,15 +452,6 @@ class SearchPostView(ListView):
         context = super().get_context_data(*args, **kwargs)
         query = self.request.GET.get('q')
         context['query'] = query
-        lst = []
-        for x in context['agents']:
-            print("::: x :::")
-            print(x)
-            if x.created_by != self.request.user or x.is_superuser == True:
-                lst.append(x.id)
-                print("::: lst :::")
-                print(lst)
-        context['agents'].filter(~Q(id__in=lst))
         return context
 
     def get_queryset(self, *args, **kwargs):
@@ -470,7 +461,11 @@ class SearchPostView(ListView):
         if query is not None:
             if query != '':
                 data = models.UserProfile.objects.filter(email__icontains=query)
-                return data
+                a = []
+                for x in data:
+                    if x.company_site != self.request.user.company_site or x.is_superuser == True:
+                        a.append(x.id)
+                return data.exclude(id__in=a)
         return HttpResponse("Agent not found")
 
 
