@@ -380,6 +380,66 @@ class AgentsView(generics.ListAPIView ,generics.RetrieveUpdateDestroyAPIView):
         return render(request, 'agents.html',{"agents" : agents})
 
     
+class AgentCreateView(generics.CreateAPIView):
+    serializer_class = serializers.AgentSerializer
+    queryset = models.UserProfile.objects.all()
+
+    template_name = 'add_agents.html'
+
+    # authentication_classes = [TokenAuthentication]
+
+    msg     = None
+    success = False
+
+    def get(self, request, *args, **kwargs):
+        serializer = self.get_serializer()
+        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+
+        # if request.data.get("password") != request.data.get("confirm_password"):
+        #     return render(request, self.template_name, { "data": request.data, 'form': serializer, "msg" : "Password Mismatch", "success" : False})
+
+        if models.UserProfile.objects.filter(Q(username=request.data.get('username')) | Q(email=request.data.get('email'))).exists():
+            return render(request, self.template_name, { "data": request.data, 'form': serializer, "msg" : "user already exists", "success" : False})
+
+        if serializer.is_valid():
+
+            user = serializer.save()
+            user.is_active = False # Deactivate account till it is confirmed
+            user.save()
+
+            current_site = get_current_site(request)
+            mail_subject = 'Activate Your Account'
+            message = render_to_string('acc_email.html', {
+                'user': user,
+                'password' : request.data.get("password"),
+                'domain': current_site.domain,
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'token': tokens.account_activation_token.make_token(user),
+            })
+            to_email = request.data.get('email')
+            cc = user.created_by.email
+            email = EmailMessage(
+                        mail_subject, message, to=[to_email], cc=[cc]
+            )
+            email.send()
+
+            messages.success(request, ('Agent Account Created Successfully'))
+
+            msg     = 'Agent Created.'
+            success = True
+            
+            # login(request, user)
+            # return redirect("/index/")
+            
+            # return redirect("/login/")
+
+
+            return render(request, self.template_name, {"form": serializer, "msg" : msg, "success" : success })
+
+        return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
 
 
 class AdminViewSet(viewsets.ModelViewSet):

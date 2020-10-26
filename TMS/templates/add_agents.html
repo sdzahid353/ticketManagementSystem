@@ -107,47 +107,78 @@
       <div class="row">
         <div class="col">
           <div class="card shadow">
-            <div class="card-header bg-white border-0">
-              <div class="row align-items-center">
-                <div class="col-4">
-                  <h3 class="mb-0">Agents</h3>
-                </div>
-                <div class="col-8 text-right">
-                  <a href="{% url 'add_agents' %}" class="btn btn-info">Add New Agent</a>
-                </div>
+            <div class="card-header bg-transparent">
+              <h3 class="mb-0">Adding Agent</h3>
+            </div>
+            <div class="card-body"></div>
+              <div class="row icon-examples" style="justify-content: center;">
+                <form method="POST" action="/add_agents/">
+                    {% csrf_token %}
+  
+                  <div class="form-group">
+                    <div class="input-group input-group-alternative">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="ni ni-single-02"></i></span>
+                      </div>
+                      <input name="name" type="text" class="form-control" placeholder=" Name *" 
+                      {% if data.username is not None %}
+                          value="{{data.name}}"
+                      {% endif %} 
+                      />
+                    </div>
+                  </div>
+  
+                  <div class="form-group">
+                    <div class="input-group input-group-alternative">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="ni ni-hat-3"></i></span>
+                      </div>
+                      <input name="username" type="text" class="form-control" placeholder=" Username *" 
+                      {% if data.username is not None %}
+                          value="{{data.username}}"
+                      {% endif %} 
+                      />
+                    </div>
+                  </div>
+
+                
+                  <div class="form-group">
+                    <div class="input-group input-group-alternative">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="ni ni-email-83"></i></span>
+                      </div>
+                      <input name="email" type="email" class="form-control" placeholder="Email *" 
+                      {% if data.email is not None %}
+                          value="{{data.email}}"
+                      {% endif %} 
+                      />
+                    </div>
+                  </div>
+  
+                    <div class="form-group">
+                      <div class="input-group input-group-alternative">
+                        <div class="input-group-prepend">
+                          <span class="input-group-text"><i class="ni ni-lock-circle-open"></i></span>
+                        </div>
+                      <input name="password" type="password" class="form-control" placeholder="Password *" value="" />
+                      </div>
+                    </div>
+  
+                    {% if msg %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                      <strong>{{msg}}</strong>
+                      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="text-center">
+                      <button type="submit" class="btn btn-primary mt-3">Add Agent</button>
+                    </div>
+                  </form>    
               </div>
             </div>
-            <div class="card-body">
-              <div class="row icon-examples">
-                {% for agent in agents %}
-                <div class="col-lg-3 col-md-6">
-                  <button type="button" class="btn-icon-clipboard" data-clipboard-text="active-40" title={{agent.name}}>
-                    <div>
-                      <i class="ni ni-active-40"></i>
-                      <span>{{agent.username}}</span>
-                    </div>
-                    <div>
-                      <i class="ni ni-active-40"></i>
-                      <span>{{agent.email}}</span>
-                    </div>
-                  </button>
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-            <div class="container p-4">
-              <div class="pagination justify-content-center">
-                <span class="step-links">
-                  {% if agents.has_previous %}
-                  <a href="?page={{ agents.previous_page_number }}">Previous</a>
-                  {% endif %}
-                  <span class="current">
-                    Page {{ agents.number }} of {{ agents.paginator.num_pages }}
-                  </span>
-                  {% if agents.has_next %}
-                  <a href="?page={{ agents.next_page_number }}">Next</a>
-                  {% endif %}
-                </span>
               </div>
             </div>
           </div>
