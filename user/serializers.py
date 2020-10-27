@@ -40,10 +40,17 @@ class AgentSerializer(serializers.ModelSerializer):
         return user
 
     def update(self, instance, validated_data):
-        """Handle updating user account"""
+        """Handle updating agent account"""
         if 'password' in validated_data:
             password = validated_data.pop('password')
             instance.set_password(password)
+
+        if validated_data['name'] == '':
+            validated_data['name'] = instance.name
+        if validated_data['username'] == '':
+            validated_data['username'] = instance.username
+        if validated_data['email'] == '':
+            validated_data['email'] = instance.email
 
         return super().update(instance, validated_data)
 

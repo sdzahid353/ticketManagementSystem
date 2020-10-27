@@ -1,0 +1,121 @@
+
+{% extends 'layouts/base.html' %}
+
+{% block title %} Icons {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+    <!-- Header -->
+    <div class="header bg-gradient-primary pb-8 pt-5 pt-md-8">
+      <div class="container-fluid">
+        <div class="header-body">          
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid mt--7">
+
+      <div class="row">
+        <div class="col">
+          <div class="card shadow">
+            <div class="card-header bg-white border-0">
+              <div class="row align-items-center">
+                <div class="col-3">
+                  <h3 class="mb-0">Agents/{{agent.email}}</h3>
+                </div>
+                <div class="col-3 text-right">
+                  <a href="{% url 'add_agents' %}" class="btn btn-info">Edit Agent Profile</a>
+                </div>
+                <div class="col-3 text-right">
+                  <a href="{% url 'add_agents' %}" class="btn btn-info">Delete Agent Account</a>
+                </div>
+                <div class="col-3 text-right">
+                  <a href="{% url 'agents' %}" class="btn btn-info">Back to Agents</a>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+                {% if success %}
+                <form method="POST" action="/agent_update/">
+                  {% csrf_token %}
+                  <h6 class="heading-small text-muted mb-4">Edit your profile details</h6>
+                  <div class="pl-lg-4">
+                    <div class="row">
+                      <div class="col-lg-6">
+                        <div class="form-group">
+                          <label class="form-control-label" for="input-first-name">Name</label>
+                          <input type="text" name="name" id="input-first-name" class="form-control form-control-alternative" placeholder="{{ request.data.name }}" >
+                        </div>
+                      </div>
+                      <div class="col-lg-6">
+                        <div class="form-group">
+                          <label class="form-control-label" for="input-username">Username</label>
+                          <input type="text" name = "username" id="input-username" class="form-control form-control-alternative" placeholder="{{ request.data.username }}" 
+                                 value="">
+                        </div>
+                      </div>
+                      <div class="col-lg-6">
+                        <div class="form-group">
+                          <label class="form-control-label" for="input-email">Email address</label>
+                          <input type="email" name="email" id="input-email" class="form-control form-control-alternative" 
+                                 placeholder="{{ request.data.email }}">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="row">
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <button type="submit" class="btn btn-primary my-4">Save</button>
+                  </div>
+                </form>
+                  {% else %}
+                  <form method="POST" action="/agent_update/">
+                    {% csrf_token %}
+                    <h6 class="heading-small text-muted mb-4">Edit your profile details</h6>
+                    <div class="pl-lg-4">
+                      <div class="row">
+                        <div class="col-lg-6">
+                          <div class="form-group">
+                              <label class="form-control-label" for="input-first-name">Name</label>
+                              <input type="text" name="name" id="input-first-name" class="form-control form-control-alternative" placeholder="{{ request.data.name }}" >
+                          </div>
+                        </div>
+                        <div class="col-lg-6">
+                          <div class="form-group">
+                            <label class="form-control-label" for="input-username">Username</label>
+                            <input type="text" name = "username" id="input-username" class="form-control form-control-alternative" placeholder="{{ request.user.username }}" 
+                                   value="">
+                          </div>
+                        </div>
+                        <div class="col-lg-6">
+                          <div class="form-group">
+                            <label class="form-control-label" for="input-email">Email address</label>
+                            <input type="email" name="email" id="input-email" class="form-control form-control-alternative" 
+                                   placeholder="{{ request.user.email }}">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-center">
+                      <button type="submit" class="btn btn-primary my-4">Save</button>
+                    </div>
+                  </form>
+                {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      {% include "includes/footer.html" %}
+
+    </div>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE --> 
+{% block javascripts %}{% endblock javascripts %}

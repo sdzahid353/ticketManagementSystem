@@ -132,17 +132,18 @@
             <div class="card-body">
               <div class="row icon-examples">
                 {% for agent in agents %}
-                <div class="col-lg-3 col-md-6">
-                  <button type="button" class="btn-icon-clipboard" data-clipboard-text="active-40" title={{agent.name}}>
-                    <div>
-                      <i class="ni ni-active-40"></i>
-                      <span>{{agent.username}}</span>
-                    </div>
-                    <div>
-                      <i class="ni ni-active-40"></i>
-                      <span>{{agent.email}}</span>
-                    </div>
+                <div class="btn-group" style="margin: 25px;">
+                  <button type="button" class="btn btn-secondary btn-lg">{{agent.email}}
                   </button>
+                  <button type="button" class="btn btn-lg btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="sr-only">Toggle Dropdown</span>
+                  </button>
+                
+                  <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{% url 'agent_detail' agent.pk %}">View Agent Details</a>
+                    <a class="dropdown-item" href="#">Update Agent Details</a>
+                    <a class="dropdown-item" href="#">Delete Agent Account</a>
+                  </div>
                 </div>
                 {% endfor %}
               </div>

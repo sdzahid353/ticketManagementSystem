@@ -1,0 +1,77 @@
+
+{% extends 'layouts/base.html' %}
+
+{% block title %} Icons {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+    <!-- Header -->
+    <div class="header bg-gradient-primary pb-8 pt-5 pt-md-8">
+      <div class="container-fluid">
+        <div class="header-body">          
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fluid mt--7">
+
+      <div class="row">
+        <div class="col">
+          <div class="card shadow">
+            <div class="card-header bg-white border-0">
+              <div class="row align-items-center">
+                <div class="col-3">
+                  <h3 class="mb-0">Agents/{{agent.email}}</h3>
+                </div>
+                <div class="col-3 text-right">
+                  <a href="{% url 'agent_update' %}" class="btn btn-info">Edit Agent Profile</a>
+                </div>
+                <div class="col-3 text-right">
+                  <a href="{% url 'add_agents' %}" class="btn btn-info">Delete Agent Account</a>
+                </div>
+                <div class="col-3 text-right">
+                  <a href="{% url 'agents' %}" class="btn btn-info">Back to Agents</a>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <h6 class="heading-small text-muted mb-4">Agent({{agent.email}}) information</h6>
+              <div class="pl-lg-8">
+                <div class="row">
+                  <div class="col-lg-9">
+                    <div class="form-group">
+                      <label class="form-control-label">Name</label><br/>
+                      <button type="button" class="btn btn-white" style="width: 315px; text-align: left;color: slategray;">{{agent.name}}</button>
+                    </div>
+                  </div>
+                  <div class="col-lg-9">
+                    <div class="form-group">
+                      <label class="form-control-label">Username</label><br/>
+                      <button type="button" class="btn btn-white" style="width: 315px; text-align: left;color: slategray;">{{agent.username}}</button>
+                    </div>
+                  </div>
+                </div>
+                  <div class="col-lg-9">
+                    <div class="form-group">
+                      <label class="form-control-label">Email address</label><br/>
+                      <button type="button" class="btn btn-white" style="width: 315px; text-align: left; color: slategray;">{{agent.email}}</button>
+                    </div>
+                  </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      {% include "includes/footer.html" %}
+
+    </div>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE --> 
+{% block javascripts %}{% endblock javascripts %}

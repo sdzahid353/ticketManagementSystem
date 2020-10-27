@@ -270,15 +270,12 @@ class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
     success = False
 
     def get(self, request, *args, **kwargs):
-        print(":::Get :::")
         serializer = self.get_serializer()
         return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
 
     def post(self, request, *args, **kwargs):
-        print(":::Editing Started :::")
         instance = get_object_or_404(models.UserProfile, id=request.user.id)
         serializer = self.get_serializer(data=request.data, instance=instance)
-        print("::: After serializer :::")
 
         # if serializer.is_valid():
     
@@ -364,7 +361,7 @@ class AgentsView(generics.ListAPIView ,generics.RetrieveUpdateDestroyAPIView):
     
     def list(self, request, *args, **kwargs):
         queryset = models.UserProfile.objects.filter(Q(company_site=request.user.company_site) & Q(is_superuser=False))
-        paginator = Paginator(queryset, 5)
+        paginator = Paginator(queryset, 4)
 
         page_number = request.GET.get('page', 1)
         page_obj = paginator.get_page(page_number)
@@ -378,6 +375,27 @@ class AgentsView(generics.ListAPIView ,generics.RetrieveUpdateDestroyAPIView):
 
         serializer = self.get_serializer(queryset, many=True)
         return render(request, 'agents.html',{"agents" : agents})
+    
+class AgentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    
+    serializer_class = serializers.AgentSerializer
+    queryset = models.UserProfile.objects.all()
+
+    # authentication_classes = [TokenAuthentication]
+    # permission_classes = (IsAuthenticated, permissions.HasAdminPermission, )
+    permission_classes_by_action = {'create': [permissions.HasAdminPermission],
+                                    'list': [permissions.HasAdminPermission],
+                                    'retrive': [IsAuthenticated],
+                                    'update': [permissions.CompanyPermission],
+                                    'partial_update': [permissions.CompanyPermission],
+                                    'destroy': [permissions.CompanyPermission],}
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = get_object_or_404(models.UserProfile, id=request.user.id)
+        serializer = self.get_serializer(instance)
+        if (request.user.is_superuser == True and request.user.company_site == serializer.data.get('company_site')) or request.user.id == serializer.data.get('id'):
+            return render(request, 'agent_detail.html',{"agent" : serializer.data})
+        return Response({"Message" : "You don't have permission"})
 
     
 class AgentCreateView(generics.CreateAPIView):
@@ -442,6 +460,45 @@ class AgentCreateView(generics.CreateAPIView):
         return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
 
 
+class AgentUpdateView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = serializers.AdminSerializer
+    queryset =  models.UserProfile.objects.all()
+    template_name = 'agent_update.html'
+
+    # authentication_classes = (TokenAuthentication,)
+    # permission_classes = (permissions.ProfilePermission, permissions.HasAdminPermission)
+
+    msg     = None
+    success = False
+
+    # def get(self, request, *args, **kwargs):
+    #     instance = self.get_object()
+    #     serializer = self.get_serializer(instance)
+    #     return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
+
+    def post(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(data=request.data, instance=instance)
+
+        # if serializer.is_valid():
+    
+        # serializer.is_valid()
+        request.data._mutable = True
+        user = serializer.update(instance, request.data)
+        request.data._mutable = False
+        user.save()
+
+        
+
+        messages.success(request, ('Agent Profile Updated Successfully'))
+
+        msg     = None
+        success = True
+            
+            
+        return render(request, self.template_name, {"form": serializer, "msg" : msg, "success" : success })
+
+
 class SearchPostView(ListView):
     model = models.UserProfile
     queryset = model.objects.filter(email = "email")
@@ -466,6 +523,7 @@ class SearchPostView(ListView):
                     if x.company_site != self.request.user.company_site or x.is_superuser == True:
                         a.append(x.id)
                 return data.exclude(id__in=a)
+            return HttpResponse("Agent not found")
         return HttpResponse("Agent not found")
 
 
