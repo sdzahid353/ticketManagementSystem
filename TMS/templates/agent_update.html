@@ -27,7 +27,7 @@
                   <h3 class="mb-0">Agents/{{agent.email}}</h3>
                 </div>
                 <div class="col-3 text-right">
-                  <a href="{% url 'add_agents' %}" class="btn btn-info">Edit Agent Profile</a>
+                  <a href="{% url 'agent_password_change' agent.id %}" class="btn btn-info">Change Agent Password</a>
                 </div>
                 <div class="col-3 text-right">
                   <a href="{% url 'add_agents' %}" class="btn btn-info">Delete Agent Account</a>
@@ -39,7 +39,7 @@
             </div>
             <div class="card-body">
                 {% if success %}
-                <form method="POST" action="/agent_update/">
+                <form method="POST">
                   {% csrf_token %}
                   <h6 class="heading-small text-muted mb-4">Edit your profile details</h6>
                   <div class="pl-lg-4">
@@ -47,13 +47,13 @@
                       <div class="col-lg-6">
                         <div class="form-group">
                           <label class="form-control-label" for="input-first-name">Name</label>
-                          <input type="text" name="name" id="input-first-name" class="form-control form-control-alternative" placeholder="{{ request.data.name }}" >
+                          <input type="text" name="name" id="input-first-name" class="form-control form-control-alternative" placeholder="{{ agent.name }}" >
                         </div>
                       </div>
                       <div class="col-lg-6">
                         <div class="form-group">
                           <label class="form-control-label" for="input-username">Username</label>
-                          <input type="text" name = "username" id="input-username" class="form-control form-control-alternative" placeholder="{{ request.data.username }}" 
+                          <input type="text" name = "username" id="input-username" class="form-control form-control-alternative" placeholder="{{ agent.username }}" 
                                  value="">
                         </div>
                       </div>
@@ -61,7 +61,7 @@
                         <div class="form-group">
                           <label class="form-control-label" for="input-email">Email address</label>
                           <input type="email" name="email" id="input-email" class="form-control form-control-alternative" 
-                                 placeholder="{{ request.data.email }}">
+                                 placeholder="{{ agent.email }}">
                         </div>
                       </div>
                     </div>
@@ -73,7 +73,7 @@
                   </div>
                 </form>
                   {% else %}
-                  <form method="POST" action="/agent_update/">
+                  <form method="POST">
                     {% csrf_token %}
                     <h6 class="heading-small text-muted mb-4">Edit your profile details</h6>
                     <div class="pl-lg-4">
@@ -81,13 +81,13 @@
                         <div class="col-lg-6">
                           <div class="form-group">
                               <label class="form-control-label" for="input-first-name">Name</label>
-                              <input type="text" name="name" id="input-first-name" class="form-control form-control-alternative" placeholder="{{ request.data.name }}" >
+                              <input type="text" name="name" id="input-first-name" class="form-control form-control-alternative" placeholder="{{ agent.name }}" >
                           </div>
                         </div>
                         <div class="col-lg-6">
                           <div class="form-group">
                             <label class="form-control-label" for="input-username">Username</label>
-                            <input type="text" name = "username" id="input-username" class="form-control form-control-alternative" placeholder="{{ request.user.username }}" 
+                            <input type="text" name = "username" id="input-username" class="form-control form-control-alternative" placeholder="{{ agent.username }}" 
                                    value="">
                           </div>
                         </div>
@@ -95,7 +95,7 @@
                           <div class="form-group">
                             <label class="form-control-label" for="input-email">Email address</label>
                             <input type="email" name="email" id="input-email" class="form-control form-control-alternative" 
-                                   placeholder="{{ request.user.email }}">
+                                   placeholder="{{ agent.email }}">
                           </div>
                         </div>
                       </div>
@@ -109,7 +109,6 @@
           </div>
         </div>
       </div>
-
 
       {% include "includes/footer.html" %}
 

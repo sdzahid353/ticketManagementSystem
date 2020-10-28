@@ -31,6 +31,7 @@ urlpatterns = [
     path('agents/', views.AgentsView.as_view(), name='agents'),
     path('add_agents/', views.AgentCreateView.as_view(), name='add_agents'),
     path('agent_detail/<int:pk>', views.AgentDetailView.as_view(), name='agent_detail'),
-    path('agent_update/', views.AgentUpdateView.as_view(), name='agent_update'),
+    path('agent_update/<int:pk>', views.AgentUpdateView.as_view(), name='agent_update'),
     path('search/', views.SearchPostView.as_view(), name='search'),
+    path('agent_password_change/<int:pk>',views.AgentChangePasswordView.as_view(),name="agent_password_change")
 ]

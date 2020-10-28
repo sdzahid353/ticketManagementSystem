@@ -28,7 +28,7 @@ from django.template import loader
 from django.http import HttpResponse
 from django import template
 from django.core.paginator import Paginator
-
+from django.contrib.auth.hashers import make_password
 
 from . import serializers, models, permissions, tokens
 from . import forms
@@ -151,10 +151,10 @@ class ActivateAccount(View):
             user.save()
             # login(request, user)
             messages.success(request, ('Your account have been confirmed.'))
-            return redirect('index')
+            return redirect('login')
         else:
             messages.warning(request, ('The confirmation link was invalid, possibly because it has already been used.'))
-            return redirect('index')
+            return redirect('login')
 
 
 
@@ -304,6 +304,7 @@ class ChangePasswordView(generics.UpdateAPIView):
     """
     serializer_class = serializers.ChangePasswordSerializer
     template_name = 'change_pass.html'
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer()
@@ -391,7 +392,7 @@ class AgentDetailView(generics.RetrieveUpdateDestroyAPIView):
                                     'destroy': [permissions.CompanyPermission],}
 
     def retrieve(self, request, *args, **kwargs):
-        instance = get_object_or_404(models.UserProfile, id=request.user.id)
+        instance = self.get_object()
         serializer = self.get_serializer(instance)
         if (request.user.is_superuser == True and request.user.company_site == serializer.data.get('company_site')) or request.user.id == serializer.data.get('id'):
             return render(request, 'agent_detail.html',{"agent" : serializer.data})
@@ -430,7 +431,7 @@ class AgentCreateView(generics.CreateAPIView):
 
             current_site = get_current_site(request)
             mail_subject = 'Activate Your Account'
-            message = render_to_string('acc_email.html', {
+            message = render_to_string('agent_email.html', {
                 'user': user,
                 'password' : request.data.get("password"),
                 'domain': current_site.domain,
@@ -438,12 +439,25 @@ class AgentCreateView(generics.CreateAPIView):
                 'token': tokens.account_activation_token.make_token(user),
             })
             to_email = request.data.get('email')
-            cc = user.created_by.email
+           
             email = EmailMessage(
-                        mail_subject, message, to=[to_email], cc=[cc]
+                        mail_subject, message, to=[to_email]
             )
             email.send()
 
+            mail_subject = 'Agent Account created'
+            message = render_to_string('agent_created_email.html', {
+                'user': user,
+                'password' : request.data.get("password"),
+                'admin': request.user
+            })
+            to_email = request.user.email
+            
+            email = EmailMessage(
+                        mail_subject, message, to=[to_email] 
+            )
+            email.send()
+            
             messages.success(request, ('Agent Account Created Successfully'))
 
             msg     = 'Agent Created.'
@@ -461,7 +475,7 @@ class AgentCreateView(generics.CreateAPIView):
 
 
 class AgentUpdateView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = serializers.AdminSerializer
+    serializer_class = serializers.AgentUpdateSerializer
     queryset =  models.UserProfile.objects.all()
     template_name = 'agent_update.html'
 
@@ -471,12 +485,15 @@ class AgentUpdateView(generics.RetrieveUpdateDestroyAPIView):
     msg     = None
     success = False
 
-    # def get(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     serializer = self.get_serializer(instance)
-    #     return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False})
+        
+
 
     def post(self, request, *args, **kwargs):
+        #import pdb;pdb.set_trace()
         instance = self.get_object()
         serializer = self.get_serializer(data=request.data, instance=instance)
 
@@ -486,17 +503,91 @@ class AgentUpdateView(generics.RetrieveUpdateDestroyAPIView):
         request.data._mutable = True
         user = serializer.update(instance, request.data)
         request.data._mutable = False
+        serializer.is_valid(raise_exception=True)
         user.save()
 
+
+        mail_subject = 'Your account details are updated successfully'
+        message = render_to_string('agent_updated_email.html', {
+                'user': user,
+        })
+        to_email = user.email
         
+        email = EmailMessage(
+                    mail_subject, message, to=[to_email] 
+        )
+        email.send()
+
+        
+        mail_subject = 'You have successfully updated the Agent details '
+        message = render_to_string('agent_updated_admin.html', {
+                'user': user,
+                'admin':request.user
+        })
+        to_email = request.user.email
+        
+        email = EmailMessage(
+                    mail_subject, message, to=[to_email] 
+        )
+        email.send()
+
+
 
         messages.success(request, ('Agent Profile Updated Successfully'))
 
+
         msg     = None
         success = True
+        
+
+
             
+        return render(request, self.template_name, {"agent": serializer.data, "msg" : msg, "success" : success })
+
+
+
+class AgentChangePasswordView(generics.UpdateAPIView):
+    """
+    An endpoint for changing password.
+    """
+    serializer_class = serializers.AgentChangePasswordSerializer
+    queryset =  models.UserProfile.objects.all()
+    template_name = 'agent_change_pass.html'
+    
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False})
+
+
+
+    def post(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(data=request.data, instance=instance)
+
+      
+        if request.data.get("new_password") == None:
+            return render(request, self.template_name, {'agent': serializer.data, "msg" : "Password should not be empty", "success" : False})
+        
+
+        
+        request.data._mutable = True
+        user = serializer.update(instance, request.data)
+        serializer.is_valid(raise_exception=True)
+        user.save()
+        request.data._mutable = False
+        
+
+
+        msg = "Password Changed Successfully"
+
+        
             
-        return render(request, self.template_name, {"form": serializer, "msg" : msg, "success" : success })
+        return render(request, self.template_name, {'agent': serializer.data, "msg" : msg, "success" : True})
+
+
+
 
 
 class SearchPostView(ListView):

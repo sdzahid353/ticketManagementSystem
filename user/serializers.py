@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.password_validation import validate_password
 from django.utils.translation import gettext_lazy as _
 from .models import UserProfile
-
+from django.contrib.auth.hashers import make_password
 
 class AgentSerializer(serializers.ModelSerializer):
     """Serializes a user profile object"""
@@ -23,7 +23,8 @@ class AgentSerializer(serializers.ModelSerializer):
                 'read_only' : True
             }
         }
-    
+
+
     def create(self, validated_data):
         """Create and return a new user"""
             
@@ -133,3 +134,59 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         # return super().update(instance, validated_data)
 
 
+
+
+class AgentUpdateSerializer(serializers.ModelSerializer):
+    """Serializes a user profile object"""
+
+    class Meta:
+        model = UserProfile
+        fields = ('id', 'name', 'email', 'username')
+        
+
+  
+
+    def update(self, instance, validated_data):
+        """Handle updating agent account"""
+      
+        if validated_data['name'] == '':
+            validated_data['name'] = instance.name
+        if validated_data['username'] == '':
+            validated_data['username'] = instance.username
+        if validated_data['email'] == '':
+            validated_data['email'] = instance.email
+
+        return super().update(instance, validated_data)
+
+
+
+
+
+class AgentChangePasswordSerializer(serializers.ModelSerializer):
+    
+
+    """
+    Serializer for password change endpoint.
+    """
+    new_password = serializers.CharField(max_length=128, write_only=True, required=True)
+
+
+
+    class Meta:
+        model = UserProfile
+        fields = ("id", "email", "new_password",)
+        extra_kwargs = {
+            'email': {
+                'read_only': True,
+            }
+        }
+
+
+    def update(self, instance, validated_data):
+        """Handle updating admin account"""
+        password = validated_data['new_password']
+        instance.set_password(password)
+        instance.save()
+        return instance
+
+     

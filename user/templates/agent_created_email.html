@@ -1,0 +1,16 @@
+{% autoescape off %}
+Hi {{ admin.name }},
+
+
+
+Your have created a new agent account successfully.
+
+Please find the below details of your newly created agent
+
+
+
+username : {{ user.username }}
+Password : {{ password }}
+email : {{ user.email }}
+company_site : {{ user.company_site }}
+{% endautoescape %}
