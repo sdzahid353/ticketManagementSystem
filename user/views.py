@@ -346,36 +346,34 @@ class ChangePasswordView(generics.UpdateAPIView):
         return render(request, self.template_name, {'form': serializer, "msg" : msg, "success" : True})
 
 
-class AgentsView(generics.ListAPIView ,generics.RetrieveUpdateDestroyAPIView):
+class AgentsView(generics.ListAPIView):
     
     serializer_class = serializers.AgentSerializer
     queryset = models.UserProfile.objects.all()
 
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = (IsAuthenticated, permissions.HasAdminPermission, )
-    permission_classes_by_action = {'create': [permissions.HasAdminPermission],
-                                    'list': [permissions.HasAdminPermission],
-                                    'retrive': [IsAuthenticated],
-                                    'update': [permissions.CompanyPermission],
-                                    'partial_update': [permissions.CompanyPermission],
-                                    'destroy': [permissions.CompanyPermission],}
-    
+    permission_classes = (IsAuthenticated,)
+
+
     def list(self, request, *args, **kwargs):
-        queryset = models.UserProfile.objects.filter(Q(company_site=request.user.company_site) & Q(is_superuser=False))
-        paginator = Paginator(queryset, 4)
+        
+        if request.user.is_superuser:
+            queryset = models.UserProfile.objects.filter(Q(company_site=request.user.company_site) & Q(is_superuser=False))
+            paginator = Paginator(queryset, 4)
 
-        page_number = request.GET.get('page', 1)
-        page_obj = paginator.get_page(page_number)
+            page_number = request.GET.get('page', 1)
+            page_obj = paginator.get_page(page_number)
 
-        agents = paginator.page(page_number)
+            agents = paginator.page(page_number)
 
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
-        return render(request, 'agents.html',{"agents" : agents})
+            serializer = self.get_serializer(queryset, many=True)
+            return render(request, 'agents.html',{"agents" : agents, "admin" : True})
+
+        return render(request, 'agents.html',{"admin" : False})
     
 class AgentDetailView(generics.RetrieveUpdateDestroyAPIView):
     
@@ -405,20 +403,20 @@ class AgentCreateView(generics.CreateAPIView):
 
     template_name = 'add_agents.html'
 
-    # authentication_classes = [TokenAuthentication]
+    permission_classes = (IsAuthenticated,)
 
     msg     = None
     success = False
 
     def get(self, request, *args, **kwargs):
-        serializer = self.get_serializer()
-        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
+        if request.user.is_superuser:
+            serializer = self.get_serializer()
+            return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False, "admin" : True})
+        return render(request, self.template_name, {"admin" : False})
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
 
-        # if request.data.get("password") != request.data.get("confirm_password"):
-        #     return render(request, self.template_name, { "data": request.data, 'form': serializer, "msg" : "Password Mismatch", "success" : False})
 
         if models.UserProfile.objects.filter(Q(username=request.data.get('username')) | Q(email=request.data.get('email'))).exists():
             return render(request, self.template_name, { "data": request.data, 'form': serializer, "msg" : "user already exists", "success" : False})
@@ -585,8 +583,6 @@ class AgentChangePasswordView(generics.UpdateAPIView):
         
             
         return render(request, self.template_name, {'agent': serializer.data, "msg" : msg, "success" : True})
-
-
 
 
 
