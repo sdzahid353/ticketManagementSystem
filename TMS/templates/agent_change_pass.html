@@ -18,6 +18,7 @@
 
     <div class="container-fluid mt--7">
 
+      {% if permission %}
       <div class="row">
         <div class="col">
           <div class="card shadow">
@@ -98,6 +99,21 @@
         </div>
       </div>
 
+      {% else %}
+      
+      <div class="row">
+        <div class="col">
+          <div class="card shadow">
+            <div class="card-header bg-white border-0">
+        <strong>You don't have permission</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+
+      {% endif %}
+      
       {% include "includes/footer.html" %}
 
     </div>

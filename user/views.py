@@ -44,7 +44,10 @@ def login_view(request):
 
     msg = None
 
-    if request.method == "POST":
+    if request.user.is_authenticated:
+        return redirect('/index/')
+
+    elif request.method == "POST":
 
         if form.is_valid():
             username = form.cleaned_data.get("username")
@@ -130,7 +133,7 @@ class AgentSignupView(generics.CreateAPIView):
             )
             email.send()
 
-            messages.success(request, ('Please Confirm your email to complete registration.'))
+            # messages.success(request, ('Please Confirm your email to complete registration.'))
 
             return redirect('login')
 
@@ -164,13 +167,15 @@ class AdminCreateView(generics.CreateAPIView):
 
     template_name = 'accounts/register.html'
 
-    authentication_classes = [TokenAuthentication]
+    # authentication_classes = [TokenAuthentication]
 
     msg     = None
     success = False
 
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer()
+        if request.user.is_authenticated:
+            return redirect('/index/')
         return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
 
     def post(self, request, *args, **kwargs):
@@ -287,7 +292,7 @@ class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
 
         
 
-        messages.success(request, ('Profile Edited Successfully'))
+        # messages.success(request, ('Profile Edited Successfully'))
 
         msg     = None
         success = True
@@ -351,12 +356,14 @@ class AgentsView(generics.ListAPIView):
     serializer_class = serializers.AgentSerializer
     queryset = models.UserProfile.objects.all()
 
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
 
 
     def list(self, request, *args, **kwargs):
         
-        if request.user.is_superuser:
+        if not request.user.is_authenticated:
+            return redirect('/login/')
+        elif request.user.is_superuser:
             queryset = models.UserProfile.objects.filter(Q(company_site=request.user.company_site) & Q(is_superuser=False))
             paginator = Paginator(queryset, 4)
 
@@ -374,27 +381,24 @@ class AgentsView(generics.ListAPIView):
             return render(request, 'agents.html',{"agents" : agents, "admin" : True})
 
         return render(request, 'agents.html',{"admin" : False})
+
     
-class AgentDetailView(generics.RetrieveUpdateDestroyAPIView):
+class AgentDetailView(generics.RetrieveAPIView):
     
     serializer_class = serializers.AgentSerializer
     queryset = models.UserProfile.objects.all()
 
-    # authentication_classes = [TokenAuthentication]
-    # permission_classes = (IsAuthenticated, permissions.HasAdminPermission, )
-    permission_classes_by_action = {'create': [permissions.HasAdminPermission],
-                                    'list': [permissions.HasAdminPermission],
-                                    'retrive': [IsAuthenticated],
-                                    'update': [permissions.CompanyPermission],
-                                    'partial_update': [permissions.CompanyPermission],
-                                    'destroy': [permissions.CompanyPermission],}
-
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        if (request.user.is_superuser == True and request.user.company_site == serializer.data.get('company_site')) or request.user.id == serializer.data.get('id'):
-            return render(request, 'agent_detail.html',{"agent" : serializer.data})
-        return Response({"Message" : "You don't have permission"})
+        
+        if (request.user.is_superuser == True and request.user.company_site == serializer.data.get('company_site')):
+            return render(request, 'agent_detail.html',{"agent" : serializer.data, "permission" : True})
+        elif not request.user.is_authenticated:
+            return redirect('/login/')
+        else:
+            return render(request, 'agent_detail.html', {"permission" : False})
+
 
     
 class AgentCreateView(generics.CreateAPIView):
@@ -403,13 +407,15 @@ class AgentCreateView(generics.CreateAPIView):
 
     template_name = 'add_agents.html'
 
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
 
     msg     = None
     success = False
 
     def get(self, request, *args, **kwargs):
-        if request.user.is_superuser:
+        if not request.user.is_authenticated:
+            return redirect('/login/')
+        elif request.user.is_superuser:
             serializer = self.get_serializer()
             return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False, "admin" : True})
         return render(request, self.template_name, {"admin" : False})
@@ -456,7 +462,7 @@ class AgentCreateView(generics.CreateAPIView):
             )
             email.send()
             
-            messages.success(request, ('Agent Account Created Successfully'))
+            # messages.success(request, ('Agent Account Created Successfully'))
 
             msg     = 'Agent Created.'
             success = True
@@ -467,9 +473,9 @@ class AgentCreateView(generics.CreateAPIView):
             # return redirect("/login/")
 
 
-            return render(request, self.template_name, {"form": serializer, "msg" : msg, "success" : success })
+            return render(request, self.template_name, {"form": serializer, "msg" : msg, "success" : success, "admin" : True })
 
-        return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
+        return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid", "admin" : True})
 
 
 class AgentUpdateView(generics.RetrieveUpdateDestroyAPIView):
@@ -486,9 +492,18 @@ class AgentUpdateView(generics.RetrieveUpdateDestroyAPIView):
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False})
-        
 
+        if not request.user.is_authenticated:
+            return redirect('/login/')
+        elif instance.is_superuser:
+            if request.user.id == instance.id:
+                return redirect('/adminupdate/')
+            return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False, "permission" : False})
+        elif (request.user.is_superuser == True and request.user.company_site == instance.company_site):
+            return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False, "permission" : True})
+        else:
+            return render(request, self.template_name, {"permission" : False})
+        
 
     def post(self, request, *args, **kwargs):
         #import pdb;pdb.set_trace()
@@ -531,16 +546,16 @@ class AgentUpdateView(generics.RetrieveUpdateDestroyAPIView):
 
 
 
-        messages.success(request, ('Agent Profile Updated Successfully'))
+        # messages.success(request, ('Agent Profile Updated Successfully'))
 
 
-        msg     = None
+        msg     = "Agent Profile Updated Successfully"
         success = True
         
 
 
             
-        return render(request, self.template_name, {"agent": serializer.data, "msg" : msg, "success" : success })
+        return render(request, self.template_name, {"agent": serializer.data, "msg" : msg, "success" : success, "permission" : True })
 
 
 
@@ -556,7 +571,15 @@ class AgentChangePasswordView(generics.UpdateAPIView):
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False})
+        if not request.user.is_authenticated:
+            return redirect('/login')
+        elif instance.is_superuser:
+            if request.user.id == instance.id:
+                return redirect('/password_change/')
+            return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False, "permission" : False})
+        elif (request.user.is_superuser == True and request.user.company_site == instance.company_site):
+            return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False, "permission" : True})
+        return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False, "permission" : False})
 
 
 

@@ -17,7 +17,7 @@
     </div>
 
     <div class="container-fluid mt--7">
-
+      {% if permission %}
       <div class="row">
         <div class="col">
           <div class="card shadow">
@@ -36,19 +36,19 @@
                   <div class="col-lg-9">
                     <div class="form-group">
                       <label class="form-control-label">Name</label><br/>
-                      <button type="button" class="btn btn-white" style="width: 315px; text-align: left;color: slategray;">{{agent.name}}</button>
+                      <div class="alert alert-white" role="alert" style="border: black 2px solid; width: 300px;">{{agent.name}}</div>
                     </div>
                   </div>
                   <div class="col-lg-9">
                     <div class="form-group">
                       <label class="form-control-label">Username</label><br/>
-                      <button type="button" class="btn btn-white" style="width: 315px; text-align: left;color: slategray;">{{agent.username}}</button>
+                      <div class="alert alert-white" role="alert" style="border: black 2px solid; width: 300px;">{{agent.username}}</div>
                     </div>
                   </div>
                   <div class="col-lg-9">
                     <div class="form-group">
                       <label class="form-control-label">Email address</label><br/>
-                      <button type="button" class="btn btn-white" style="width: 315px; text-align: left; color: slategray;">{{agent.email}}</button>
+                      <div class="alert alert-white" role="alert" style="border: black 2px solid; width: 300px;">{{agent.email}}</div>
                     </div>
                   </div>
                   </div>
@@ -74,7 +74,19 @@
         </div>
       </div>
 
+      {% else %}
+      <div class="row">
+        <div class="col">
+          <div class="card shadow">
+            <div class="card-header bg-white border-0">
+        <strong>You don't have permission</strong>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      {% endif %}
+      
       {% include "includes/footer.html" %}
 
     </div>
