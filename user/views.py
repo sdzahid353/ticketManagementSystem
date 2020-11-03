@@ -237,37 +237,39 @@ def password_reset_request(request):
             email = password_reset_form.cleaned_data['email']
             associated_users = models.UserProfile.objects.filter(Q(email=email))
             # user = models.UserProfile.objects.get(email=email)
-            if associated_users.exists() and associated_users[0].is_superuser:
-                for user in associated_users:
-                    current_site = get_current_site(request)
-                    mail_subject = "Password Reset Requested"
-                    email_template_name = "password/password_reset_subject.txt"
-                    c = {
-                    "email":user.email,
-                    'domain':current_site.domain,
-                    'site_name': user.company_site,
-                    "uid": urlsafe_base64_encode(force_bytes(user.pk)),
-                    "user": user,
-                    'token': default_token_generator.make_token(user),
-                    'protocol': 'http',
-                    }
-                    message = render_to_string(email_template_name, c)
-                    to_email = user.email
-                    email = EmailMessage(
-                            mail_subject, message, to=[to_email]
-                        )
-                    email.send()
-                    # try:
-                    # 	send_mail(subject, email, 'admin@example.com' , [user.email], fail_silently=False)
-                    # except BadHeaderError:
-                    #     return HttpResponse('Invalid header found.')
-                    return redirect ("/password_reset/done/")
+            if associated_users.exists():
+                if associated_users[0].is_superuser:
+                    for user in associated_users:
+                        current_site = get_current_site(request)
+                        mail_subject = "Password Reset Requested"
+                        email_template_name = "password/password_reset_subject.txt"
+                        c = {
+                        "email":user.email,
+                        'domain':current_site.domain,
+                        'site_name': user.company_site,
+                        "uid": urlsafe_base64_encode(force_bytes(user.pk)),
+                        "user": user,
+                        'token': default_token_generator.make_token(user),
+                        'protocol': 'http',
+                        }
+                        message = render_to_string(email_template_name, c)
+                        to_email = user.email
+                        email = EmailMessage(
+                                mail_subject, message, to=[to_email]
+                            )
+                        email.send()
+                        # try:
+                        # 	send_mail(subject, email, 'admin@example.com' , [user.email], fail_silently=False)
+                        # except BadHeaderError:
+                        #     return HttpResponse('Invalid header found.')
+                        return redirect ("/password_reset/done/")
+                return render(request=request, template_name="password/password_reset.html", context={"password_reset_form":password_reset_form, "msg":"You don't have permission"})
         return render(request=request, template_name="password/password_reset.html", context={"password_reset_form":password_reset_form, "msg":"Please enter your registered email address"})
     password_reset_form = forms.PasswordResetForm()
     return render(request=request, template_name="password/password_reset.html", context={"password_reset_form":password_reset_form})
 
 
-
+@method_decorator(login_required(login_url="/login/"), name='dispatch') 
 class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.AdminSerializer
     queryset =  models.UserProfile.objects.all()
@@ -281,7 +283,10 @@ class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
 
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer()
-        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
+        if request.user.is_superuser:
+            return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False, "permission" : True})
+        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False, "permission" : False})
+
 
     def post(self, request, *args, **kwargs):
         instance = get_object_or_404(models.UserProfile, id=request.user.id)
@@ -308,6 +313,7 @@ class AdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
         # return render(request, self.template_name, {"data": request.data,'form': serializer, "msg" : "Form is not valid",})
 
 
+@method_decorator(login_required(login_url="/login/"), name='dispatch') 
 class ChangePasswordView(generics.UpdateAPIView):
     """
     An endpoint for changing password.
@@ -318,7 +324,9 @@ class ChangePasswordView(generics.UpdateAPIView):
 
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer()
-        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False})
+        if request.user.is_superuser:
+            return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False, "permission" : True})
+        return render(request, self.template_name, {'form': serializer, "msg" : None, "success" : False, "permission" : False})
 
     def get_object(self, queryset=None):
         obj = self.request.user

@@ -1,6 +1,6 @@
 {% extends 'layouts/base.html' %}
 
-{% block title %} Profile {% endblock title %}
+{% block title %} Admin Profile Update {% endblock title %}
 
 {% block content %}
 
@@ -11,6 +11,7 @@
       <span class="mask bg-gradient-default opacity-8"></span>
       <!-- Header container -->
       <div class="container-fluid d-flex align-items-center">
+        {% if permission %}
         <div class="row">
           <div class="col-lg-7 col-md-10">
             {% if success %}
@@ -27,7 +28,7 @@
     </div>
 
     <div class="container-fluid mt--7">
-
+      {% if permission %}
       <div class="row">
         <div class="col-xl-4 order-xl-2 mb-5 mb-xl-0">
           <div class="card card-profile shadow">
@@ -197,8 +198,27 @@
           </div>
         </div>
       </div>
+      
+      {% endif %}
 
+      {% else %}
+      <div class="col-xl-12 order-xl-1">
+        <div class="card bg-secondary shadow">
+          <div class="card-header bg-white border-0">
+            <div class="row align-items-center">
+              <div class="col-12">
+                <h3 class="mb-0">You don't have permission</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% endif %}
+      
+      {% if permission %}
       {% include "includes/footer.html" %}
+      {% endif %}
 
     </div>
 

@@ -1,6 +1,6 @@
 {% extends 'layouts/base.html' %}
 
-{% block title %} Profile {% endblock title %}
+{% block title %} Admin Change Password {% endblock title %}
 
 {% block content %}
 
@@ -15,6 +15,7 @@
           <div class="col-lg-7 col-md-10">
             <h1 class="display-2 text-white">Hello {{ request.user.name }}</h1>
           </div>
+          {% if permission %}
           <div class="col-lg-7 col-md-10">
             <p class="text-white mt-0 mb-5">You can change your password of your profile here</p>
           </div>
@@ -99,8 +100,24 @@
         </div>
       </div>
 
-      {% include "includes/footer.html" %}
+      {% else %}
+      <div class="col-xl-12 order-xl-1">
+        <div class="card bg-secondary shadow">
+          <div class="card-header bg-white border-0">
+            <div class="row align-items-center">
+              <div class="col-12">
+                <h3 class="mb-0">You don't have permission</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      {% endif %}
+      
+      {% if permission %}
+      {% include "includes/footer.html" %}
+      {% endif %}
     </div>
 
 {% endblock content %}
