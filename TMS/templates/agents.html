@@ -56,7 +56,7 @@
                     <a class="dropdown-item" href="{% url 'agent_detail' agent.pk %}">View Agent Details</a>
                     <a class="dropdown-item" href="{% url 'agent_update' agent.pk %}">Update Agent Details</a>
                     <a class="dropdown-item" href="{% url 'agent_password_change' agent.pk %}">Update Agent Password</a>
-                    <a class="dropdown-item" href="#">Delete Agent Account</a>
+                    <a class="dropdown-item" href="{% url 'agent_delete' agent.pk %}">Delete Agent Account</a>
                   </div>
                 </div>
                 {% endfor %}

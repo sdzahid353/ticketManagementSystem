@@ -60,7 +60,7 @@
                     <a href="{% url 'agent_update'  agent.id %}" class="btn btn-info">Edit Agent Profile</a>
                   </div>
                   <div class="col-lg-9 text-left" style="margin: 20px;"> 
-                    <a href="{% url 'add_agents' %}" class="btn btn-info">Delete Agent Account</a>
+                    <a href="{% url 'agent_delete' agent.id %}" class="btn btn-info">Delete Agent Account</a>
                   </div>
                   <div class="col-lg-9 text-left" style="margin:20px;">
                     <a href="{% url 'agents' %}" class="btn btn-info">Back to Agents</a>

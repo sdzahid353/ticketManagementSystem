@@ -29,6 +29,11 @@ from django.http import HttpResponse
 from django import template
 from django.core.paginator import Paginator
 from django.contrib.auth.hashers import make_password
+from django.views.generic.edit import DeleteView
+from django.urls import reverse_lazy
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseRedirect
 
 from . import serializers, models, permissions, tokens
 from . import forms
@@ -556,6 +561,61 @@ class AgentUpdateView(generics.RetrieveUpdateDestroyAPIView):
 
             
         return render(request, self.template_name, {"agent": serializer.data, "msg" : msg, "success" : success, "permission" : True })
+
+
+# class AgentDeleteView(generics.DestroyAPIView):
+#     serializer_class = serializers.AgentUpdateSerializer
+#     queryset =  models.UserProfile.objects.all()
+#     template_name = 'agent_delete.html'
+#     success_url = reverse_lazy('login')
+
+#     # authentication_classes = (TokenAuthentication,)
+#     # permission_classes = (permissions.ProfilePermission, permissions.HasAdminPermission)
+
+#     msg     = None
+#     success = False
+
+#     def get(self, request, *args, **kwargs):
+#         instance = self.get_object()
+#         serializer = self.get_serializer(instance)
+
+#         if not request.user.is_authenticated:
+#             return redirect('/login/')
+#         elif instance.is_superuser:
+#             return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False, "permission" : False})
+#         elif (request.user.is_superuser == True and request.user.company_site == instance.company_site):
+#             return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False, "permission" : True})
+#         else:
+#             return render(request, self.template_name, {"permission" : False})
+
+
+
+#     def destroy(self, request, *args, **kwargs):
+#         instance = self.get_object()
+#         serializer = self.get_serializer(data=request.data, instance=instance)
+#         self.perform_destroy(instance)
+#         #serializer = self.get_serializer(instance)
+#         serializer.delete()
+#         return render(request, self.template_name, {'agent': serializer.data, "msg" : None, "success" : False, "permission" : True})
+
+
+
+@method_decorator(login_required(login_url="/login/"), name='dispatch') 
+class AgentDeleteView(DeleteView):
+    model = models.UserProfile
+    template_name = 'agent_deletee.html'
+    success_url = reverse_lazy('login')
+
+    
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        success_url = self.get_success_url()
+        if (request.user.is_superuser == True and request.user.company_site == self.object.company_site):
+            self.object.delete()
+            return render(request, 'agent_deletee.html',{'permission':True})
+        return render(request, 'agent_deletee.html',{'permission':False})
+
+
 
 
 
