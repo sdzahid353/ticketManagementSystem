@@ -34,6 +34,7 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
+from django.urls import reverse
 
 from . import serializers, models, permissions, tokens
 from . import forms
@@ -402,6 +403,8 @@ class AgentDetailView(generics.RetrieveAPIView):
     queryset = models.UserProfile.objects.all()
 
     def retrieve(self, request, *args, **kwargs):
+        if not models.UserProfile.objects.filter(pk=self.kwargs['pk']):
+            return render(request, 'agent_detail.html', {'permission':False})
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         
@@ -503,6 +506,8 @@ class AgentUpdateView(generics.RetrieveUpdateDestroyAPIView):
     success = False
 
     def get(self, request, *args, **kwargs):
+        if not models.UserProfile.objects.filter(pk=self.kwargs['pk']):
+            return render(request, self.template_name, {'permission':False})
         instance = self.get_object()
         serializer = self.get_serializer(instance)
 
@@ -614,15 +619,24 @@ class AgentDeleteView(DeleteView):
     template_name = 'agent_deletee.html'
     success_url = reverse_lazy('login')
 
+    def get(self, request, *args, **kwargs):
+        if not models.UserProfile.objects.filter(pk=self.kwargs['pk']):
+            return render(request, self.template_name, {'permission':False})
+        self.object = self.get_object()
+        context = self.get_context_data(object=self.object)
+        if (request.user.is_superuser == True and request.user.company_site == self.object.company_site):
+            return render(request, 'agent_deletee.html',{'object' : self.object, 'permission':True})
+        return render(request, 'agent_deletee.html',{'permission':False})
+        # return self.render_to_response(context)
     
+
     def delete(self, request, *args, **kwargs):
+        # if not models.UserProfile.objects.filter(pk=self.kwargs['pk']):
+        #     return render(request, self.template_name, {'permission':False})
         self.object = self.get_object()
         success_url = self.get_success_url()
-        if (request.user.is_superuser == True and request.user.company_site == self.object.company_site):
-            self.object.delete()
-            return render(request, 'agent_deletee.html',{'permission':True})
-        return render(request, 'agent_deletee.html',{'permission':False})
-
+        self.object.delete()
+        return redirect('agents')
 
 
 
@@ -637,6 +651,8 @@ class AgentChangePasswordView(generics.UpdateAPIView):
     
 
     def get(self, request, *args, **kwargs):
+        if not models.UserProfile.objects.filter(pk=self.kwargs['pk']):
+            return render(request, self.template_name, {"msg" : None, "success" : False, "permission" : False})
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         if not request.user.is_authenticated:
