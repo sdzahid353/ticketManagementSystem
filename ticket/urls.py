@@ -9,4 +9,5 @@ router.register('customer', views.CustomerViewSet, basename='customer')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('tickets/', views.TicketlistView.as_view(), name='tickets_list'),
 ]
