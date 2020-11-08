@@ -12,7 +12,7 @@ class Ticket(models.Model):
     STATUS_CHOICES = (
         ('New','New'),
         ('InProgress','InProgress'),
-        ('Resloved','Resolved'),
+        ('Resolved','Resolved'),
     )
     PRIOIRTY_CHOICES =(
         ('Low','Low'),

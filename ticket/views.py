@@ -6,7 +6,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from pprint import pprint
 from django.core.paginator import Paginator
-
+from rest_framework.permissions import IsAuthenticated
 from . import models, serializers
 
 
@@ -60,12 +60,44 @@ class TicketlistView(generics.ListAPIView):
 
 
 
+class  TicketcreateView(generics.ListCreateAPIView):
+    serializer_class = serializers.TicketSerializer
+    queryset = models.Ticket.objects.all()
+    template_name = 'add_ticket.html'
+
+
+    msg     = None
+    
+    # authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+
+    def get(self, request, *args, **kwargs):
+        serializer = self.get_serializer()
+        return render(request, self.template_name, {'form': serializer,"msg" : None})
+        
+
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        print(request.user.is_superuser)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            # msg     = 'Ticket  Created.'
+            # success = True
+            return render(request, self.template_name, {'form': serializer,"msg":'Ticket created' })
+        return render(request, self.template_name, {"data": request.data,'form': serializer,'msg':None})
+       
+        
+        
+        
+
 class TicketViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.TicketSerializer
     queryset = models.Ticket.objects.all()
 
-    authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    # authentication_classes = (TokenAuthentication,)
+    # permission_classes = (IsAuthenticated,)
 
 
     def create(self, request, *args, **kwargs):
@@ -112,7 +144,7 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        print("****** retrieve ******")
+        print("** retrieve **")
         print("instance")
         serializer = self.get_serializer(instance)
         print("serializer")

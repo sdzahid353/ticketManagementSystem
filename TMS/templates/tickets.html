@@ -107,6 +107,9 @@
           <div class="card shadow">
             <div class="card-header border-0">
               <h3 class="mb-0">Tickets details</h3>
+              <div class="col-14 text-right" style="margin-top: -25px;">
+                <a href="{% url 'create_ticket' %}" class="btn btn-info">Add New Ticket</a>
+              </div>
             </div>
             <div class="table-responsive">
               <table class="table align-items-center table-flush">
@@ -151,9 +154,9 @@
                           <i class="fas fa-ellipsis-v"></i>
                         </a>
                         <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-                          <a class="dropdown-item" href="#">Action</a>
-                          <a class="dropdown-item" href="#">Another action</a>
-                          <a class="dropdown-item" href="#">Something else here</a>
+                          <a class="dropdown-item" href="#">Update Ticket</a>
+                          <a class="dropdown-item" href="#">Details of  Ticket </a>
+                          <a class="dropdown-item" href="#">Delete Ticket</a>
                         </div>
                       </div>
                     </td>
@@ -536,7 +539,7 @@
 
 
       {% include "includes/footer.html" %}
-
+  
     </div>
 
 {% endblock content %}

@@ -1,0 +1,131 @@
+{% extends 'layouts/base.html' %}
+
+
+
+{% block title %} Create New Ticket {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}
+
+<style>
+    .form-control {
+
+        border-style: dotted;
+
+    }
+</style>
+
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="header bg-gradient-primary pb-8 pt-5 pt-md-8">
+    <div class="container-fluid">
+        <div class="header-body">
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid mt--7">
+
+    <div class="row">
+        <div class="col">
+            <div class="card shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="mb-0">Adding New Ticket</h3>
+                </div>
+                <div class="card-body"></div>
+                <div class="row icon-examples" style="justify-content: center;">
+                    <form method="POST" action="{% url 'create_ticket'%}">
+                        {% csrf_token %}
+
+
+                        <div class="form-group">
+                            <label for="subject">subject:</label>
+                            <div class="col-sm-10">
+                                <input name="subject" type="text" class="form-control" {% if data.subject is not None %}
+                                    value="{{data.subject}}" {% endif %} />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">description:</label>
+                            <div class="col-sm-10" style="width:700px">
+                                <textarea name="description" class="form-control" aria-label="With textarea" required ></textarea>
+                            </div>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label> Select status: </label>
+                            <div class="col-sm-10">
+                                <select required name="status" class="col-sm-12" style="height: 40px;  border-style: dotted;background-color:inherit;">
+                                    <option value="New"> New </option>
+                                    <option value="InProgress"> InProgress</option>
+                                    <option value="Resolved"> Resolved </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="Proirty"> Select Proirty: </label>
+                            <div class="col-sm-10">
+                                <select  required name="Proirty" class="col-sm-12" style="height: 40px; border-style: dotted;background-color:inherit;">
+                                    <option value="Low"> Low </option>
+                                    <option value="Medium"> Medium</option>
+                                    <option value="High"> High </option>
+                                    <option value="Urgent"> Urgent </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contact"> contact: </label>
+                            <div class="col-sm-10">
+                                <input name="contact" type="text" class="form-control" required {% if data.contact is not None %}
+                                    value="{{data.contact}}" {% endif %} />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="assigned_to"> assigned_to:</label>
+                            <div class="col-sm-10">
+                                <input name="assigned_to" type="text" class="form-control"
+                                    {% if data.assigned_to is not None %} value="{{data.assigned_to}}" {% endif %} />
+                            </div>
+                        </div>
+
+
+
+                        {% if msg %}
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <strong>{{msg}}</strong>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        {% endif %}
+
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary mt-3" style="margin-bottom: 40px;">Add New Ticket</button>
+                            <br>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    {% include "includes/footer.html" %}
+
+</div>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE -->
+{% block javascripts %}{% endblock javascripts %}
