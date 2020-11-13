@@ -36,6 +36,8 @@ class TicketlistView(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         print("List")
         print(request.user)
+        if not request.user.is_authenticated:
+            return redirect('/login/')
         if not request.user.is_superuser:
             queryset = models.Ticket.objects.filter(Q(created_by=request.user.id) | Q(assigned_to=request.user.id))
         else:
@@ -73,10 +75,12 @@ class  TicketcreateView(generics.ListCreateAPIView):
     msg     = None
     
     # authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
 
 
     def get(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('/login/')
         serializer = self.get_serializer()
         users = UserProfile.objects.filter(Q(company_site=request.user.company_site) & Q(is_superuser=False))       
         return render(request, self.template_name, {'form': serializer,"msg" : None,"admin":request.user.is_superuser,'users':users})
@@ -201,10 +205,16 @@ class TicketDetailView(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         # if not models.UserProfile.objects.filter(pk=self.kwargs['pk']):
         #     return render(request, 'agent_detail.html', {'permission':False})
+        if not request.user.is_authenticated:
+            return redirect('/login/')
+        if not models.Ticket.objects.filter(pk=self.kwargs['pk']):
+            return render(request, 'agent_detail.html', {'permission':False})
         instance = self.get_object()
         serializer = self.get_serializer(instance)
+        created_by = instance.created_by.email
+        assigned_to = instance.assigned_to.email
         if (request.user.is_superuser and request.user.company_site == instance.created_by.company_site)  or request.user.id == serializer.data.get('created_by') or request.user.id == instance.assigned_to.id:
-            return render(request, 'ticket_detail.html',{"ticket" : serializer.data, "permission" : True})
+            return render(request, 'ticket_detail.html',{"ticket" : serializer.data, "created_by" : created_by, "assigned_to" : assigned_to, "permission" : True})
         return Response({"Message" : "You don't have permission"})
         
 
