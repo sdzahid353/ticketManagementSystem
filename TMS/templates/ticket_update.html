@@ -1,0 +1,164 @@
+{% extends 'layouts/base.html' %}
+
+
+
+{% block title %} Update Ticket {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}
+
+<style>
+    .form-control {
+
+        border-style: dotted;
+
+    }
+</style>
+
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="header bg-gradient-primary pb-8 pt-5 pt-md-8">
+    <div class="container-fluid">
+        <div class="header-body">
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid mt--7">
+
+    <div class="row">
+        <div class="col">
+            <div class="card shadow">
+                <div class="card-header bg-transparent">
+                    <h3 class="mb-0">Updating Ticket</h3>
+                </div>
+                <div class="card-body"></div>
+                <div class="row icon-examples" style="justify-content: center;">
+                    <form method="POST" action="#">
+                        {% csrf_token %}
+
+
+                        <div class="form-group">
+                            <label for="subject">subject:</label>
+                            <div class="col-sm-10">
+                                <input name="subject" type="text" class="form-control"  value="{{form.subject}}"  placeholder=""/>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">description:</label>
+                            <div class="col-sm-10" style="width:700px"  >
+                                <textarea name="description" type="text" class="form-control" aria-label="With textarea" placeholder="" > {{form.description}}</textarea>
+                            </div>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label> Select status: </label>
+                            <div class="col-sm-10">
+                                <select  name="status" class="col-sm-12" style="height: 40px;  border-style: dotted;background-color:inherit;"  value="{{form.status}}"  placeholder="">
+                                    {% if form.status == 'New' %}
+                                    <option value="New" selected = "selected"> New </option>
+                                    <option value="InProgress"> InProgress</option>
+                                    <option value="Resolved"> Resolved </option> 
+                                    {% elif form.status == 'InProgress' %}
+                                    <option value="New" > New </option>
+                                    <option value="InProgress" selected = "selected"> InProgress</option>
+                                    <option value="Resolved"> Resolved </option> 
+                                    {% elif form.status == 'Resolved' %}
+                                    <option value="New" > New </option>
+                                    <option value="InProgress"> InProgress</option>
+                                    <option value="Resolved" selected = "selected"> Resolved </option>
+                                    {% endif %} 
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="Priority"> Select Priority: </label>
+                            <div class="col-sm-10">
+                                <select   name="priority" class="col-sm-12" style="height: 40px; border-style: dotted;background-color:inherit;"   value="{{form.priority}}"  placeholder="">
+                                    {% if form.priority == 'Low' %}
+                                    <option value="Low" selected = "selected" > Low </option>
+                                    <option value="Medium"> Medium</option>
+                                    <option value="High"> High </option>
+                                    <option value="Urgent"> Urgent </option>
+                                    {% elif form.priority == 'Medium' %}
+                                    <option value="Low" > Low </option>
+                                    <option value="Medium" selected = "selected"> Medium</option>
+                                    <option value="High"> High </option>
+                                    <option value="Urgent"> Urgent </option>
+                                    {% elif form.priority == 'High' %}
+                                    <option value="Low" >Low</option>
+                                    <option value="Medium"> Medium</option>
+                                    <option value="High"selected = "selected" > High </option>
+                                    <option value="Urgent"> Urgent </option>
+                                    {% elif form.priority == 'Urgent' %}
+                                    <option value="Low" > Low </option>
+                                    <option value="Medium"> Medium</option>
+                                    <option value="High"> High </option>
+                                    <option value="Urgent" selected = "selected" > Urgent </option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contact"> contact: </label>
+                            <div class="col-sm-10">
+                                <input name="contact" type="text" class="form-control"  readonly
+                                value="{{form.contact}}" placeholder="{{ request.data.contact }}"/>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="assigned_to"> assigned_to:</label>
+                            <div class="col-sm-10">
+                                <select id="select_agent" name="assigned_to" class="col-sm-12"  type="text" style="height: 40px; border-style: dotted;background-color:inherit;"   class="form-control"> 
+                                    <option value="{{form.assigned_to}}"> {{instance.email}}</option>
+                                    {% for agnet in agnets%} 
+                                    <option value="{{agnet.email}}">{{agnet.email}}</option> 
+                                    <!-- <option value="beta">beta</option>
+                                    <option value="theta">theta</option>
+                                    <option value="omega">omega</option> -->
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+
+
+                        {% if msg %}
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <strong>{{msg}}</strong>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        {% endif %}
+
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary mt-3" style="margin-bottom: 40px;">Update Ticket</button>
+                            <br>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    {% include "includes/footer.html" %}
+
+</div>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE -->
+{% block javascripts %}{% endblock javascripts %}

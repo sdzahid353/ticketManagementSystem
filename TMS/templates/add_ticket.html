@@ -70,9 +70,9 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="Proirty"> Select Proirty: </label>
+                            <label for="Proirty"> Select Priority: </label>
                             <div class="col-sm-10">
-                                <select  required name="Proirty" class="col-sm-12" style="height: 40px; border-style: dotted;background-color:inherit;">
+                                <select  required name="priority" class="col-sm-12" style="height: 40px; border-style: dotted;background-color:inherit;">
                                     <option value="Low"> Low </option>
                                     <option value="Medium"> Medium</option>
                                     <option value="High"> High </option>
@@ -89,14 +89,21 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
+                        {% if admin %}
+                        <div class="form-group"> 
                             <label for="assigned_to"> assigned_to:</label>
                             <div class="col-sm-10">
-                                <input name="assigned_to" type="text" class="form-control"
-                                    {% if data.assigned_to is not None %} value="{{data.assigned_to}}" {% endif %} />
+                                <select id="select_agent" name="assigned_to" class="col-sm-12"  type="text" style="height: 40px; border-style: dotted;background-color:inherit;"   class="form-control"> 
+                                    <option value="{{data.assigned_to}}"> </option>
+                                    {% if users %}
+                                        {% for user in users%} 
+                                         <option value="{{user.email}}">{{user.email}}</option> 
+                                        {% endfor %}
+                                    {% endif %}    
+                                </select>
                             </div>
                         </div>
-
+                        {% endif %}
 
 
                         {% if msg %}

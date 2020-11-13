@@ -1,0 +1,100 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} Ticket Detail {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="header bg-gradient-primary pb-8 pt-5 pt-md-8">
+    <div class="container-fluid">
+        <div class="header-body">
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid mt--7">
+    {% if permission %}
+
+       <div class="row">
+         <div class="card shadow">
+            <div class="card-header bg-white border-0">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="mb-0">Ticket Details {{ ticket.id}}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <table class="table table-bordered">
+                        <tr>
+                            <td class=""><b>Subject</b></td>
+                            <td>{{ ticket.subject}}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="description"><b>Description</b></td>
+                            <td>{{ ticket.description}}</td>
+                        </tr>
+                        <tr>
+                            <td class=""><b>status</b></td>
+                            <td>{{ ticket.status}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td width="180px" class="description"><b>priority</b></td>
+                            <td>{{ ticket.priority }}</td>
+                        </tr>
+                        <tr>
+                            <td class="description"><b>contact</b></td>
+                            <td>{{ ticket.contact}}</td>
+                        </tr>
+                        <tr>
+                            <td class="description"><b>created_at</b></td>
+                            <td>{{ ticket.created_at}}</td>
+                        </tr>
+                        <tr>
+                            <td class="description"><b>updated_at</b></td>
+                            <td>{{ ticket.updated_at}}</td>
+                        </tr>
+                        <tr>
+                            <td class="description"><b>assigned_to</b></td>
+                            <td>{{ ticket.assigned_to}}</td>
+                        </tr>
+
+                        <tr>
+                            <td class="description"><b>created_by</b></td>
+                            <td>{{ ticket.created_by}}</td>
+                        </tr>
+                    </table>
+
+                </div>
+
+            </div>
+          </div>
+       </div>
+
+
+        {% else %}
+        <div class="row">
+            <div class="col">
+                <div class="card shadow">
+                    <div class="card-header bg-white border-0">
+                        <strong>You don't have permission</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% endif %}
+
+        {% include "includes/footer.html" %}
+</div>
+
+    {% endblock content %}
+
+    <!-- Specific JS goes HERE -->
+    {% block javascripts %}{% endblock javascripts %}

@@ -1,0 +1,56 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} Ticket Delete {% endblock title %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+<!-- Header -->
+
+
+<div class="header bg-gradient-primary pb-8 pt-5 pt-md-8">
+    <div class="container-fluid">
+        <div class="header-body">
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid mt--7">
+    {% if permission %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">Delete</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="alert alert-warning" role="alert">
+                    Are you sure you want to delete <strong>{{ object }}</strong> ?
+                </div>
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="row">
+        <div class="col">
+            <div class="card shadow">
+                <div class="card-header bg-white border-0">
+                    <strong>You don't have permission</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+    {% include "includes/footer.html" %}
+
+</div>
+
+{% endblock  %}
+
+<!-- Specific JS goes HERE -->
+{% block javascripts %}{% endblock javascripts %}
